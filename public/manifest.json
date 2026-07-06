@@ -1,0 +1,11 @@
+{
+  "name": "星空日记",
+  "short_name": "星空日记",
+  "description": "每篇日记化作一颗星星，挂在夜空中",
+  "start_url": "/star-diary/",
+  "scope": "/star-diary/",
+  "display": "standalone",
+  "background_color": "#060618",
+  "theme_color": "#060618",
+  "orientation": "portrait-primary"
+}
