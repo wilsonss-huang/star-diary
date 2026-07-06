@@ -2,8 +2,8 @@ import { defineConfig } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  // Use relative paths for Electron file:// protocol
-  base: './',
+  // './' for Electron, '/star-diary/' for GitHub Pages
+  base: process.env.VITE_BASE || './',
   plugins: [tailwindcss()],
   build: {
     outDir: 'dist',
