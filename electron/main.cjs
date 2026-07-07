@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, protocol, net } = require('electron');
+const { app, BrowserWindow, shell, protocol, net, session } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 
@@ -113,8 +113,27 @@ function setupAutoUpdater() {
 
 // ============================================================
 
+// ============================================================
+// 拦截响应，强制添加 CORS 头（CloudBase API 不认 stardiary:// 来源）
+// ============================================================
+
+function setupCORS() {
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Access-Control-Allow-Origin': ['*'],
+        'Access-Control-Allow-Methods': ['GET, POST, PUT, DELETE, OPTIONS'],
+        'Access-Control-Allow-Headers': ['*'],
+        'Access-Control-Allow-Credentials': ['true'],
+      },
+    });
+  });
+}
+
 app.whenReady().then(() => {
   setupProtocol();
+  setupCORS();
   createWindow();
   setupAutoUpdater();
 });
