@@ -24,6 +24,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
+      webSecurity: false,  // 桌面应用关闭 CORS 限制
     },
   });
 
@@ -33,7 +34,7 @@ function createWindow() {
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
     // 生产环境用自定义协议替代 file://，确保 CloudBase API 正常工作
-    mainWindow.loadURL('stardiary://./index.html');
+    mainWindow.loadURL('stardiary://app/index.html');
   }
 
   // Open external links in browser
