@@ -27,7 +27,7 @@ function createWindow() {
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
     // In production, load the built files
-    mainWindow.loadFile(path.join(__dirname, 'dist/index.html'));
+    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
   // Open external links in browser

@@ -4,10 +4,14 @@ import StarField from './components/StarField';
 import NewDiaryModal from './components/NewDiaryModal';
 import DiaryCard from './components/DiaryCard';
 import SearchBar from './components/SearchBar';
+import AuthScreen from './components/AuthScreen';
+import SettingsPanel from './components/SettingsPanel';
 import { useDiaries } from './hooks/useDiaries';
+import { useAuth } from './contexts/AuthContext';
 import type { DiaryEntry } from './types';
 
 export default function App() {
+  const { currentUser, isLoading: authLoading } = useAuth();
   const {
     diaries,
     saveDiary,
@@ -16,6 +20,11 @@ export default function App() {
     searchDiaries,
     highlightedIds,
     totalCount,
+    isCloudLoading,
+    hasLegacyData,
+    migrateLegacy,
+    dismissMigration,
+    refreshDiaries,
   } = useDiaries();
 
   const [showNewModal, setShowNewModal] = useState(false);
@@ -23,8 +32,8 @@ export default function App() {
   const [newStarId, setNewStarId] = useState<string | null>(null);
 
   const handleSave = useCallback(
-    (title: string, content: string, emotion: Parameters<typeof saveDiary>[2]) => {
-      const entry = saveDiary(title, content, emotion);
+    async (title: string, content: string, emotion: Parameters<typeof saveDiary>[2]) => {
+      const entry = await saveDiary(title, content, emotion);
       setNewStarId(entry.id);
       setTimeout(() => setNewStarId(null), 2000);
     },
@@ -33,15 +42,29 @@ export default function App() {
 
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
-    return diaries.filter(d => highlightedIds.includes(d.id));
+    return diaries.filter((d) => highlightedIds.includes(d.id));
   }, [diaries, highlightedIds, searchQuery]);
 
-  const handleSearchResultClick = useCallback(
-    (diary: DiaryEntry) => {
-      setSelectedDiary(diary);
-    },
-    [],
-  );
+  const handleSearchResultClick = useCallback((diary: DiaryEntry) => {
+    setSelectedDiary(diary);
+  }, []);
+
+  // 启动加载中
+  if (authLoading || isCloudLoading) {
+    return (
+      <div className="relative w-full h-full bg-[#060618] flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl animate-pulse mb-4">🌟</div>
+          <p className="text-white/30 text-sm">正在连接星空...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 未登录
+  if (!currentUser) {
+    return <AuthScreen />;
+  }
 
   return (
     <div className="relative w-full h-full bg-[#060618] overflow-hidden select-none">
@@ -60,6 +83,9 @@ export default function App() {
         onResultClick={handleSearchResultClick}
         totalCount={totalCount}
       />
+
+      {/* Settings */}
+      <SettingsPanel refreshDiaries={refreshDiaries} />
 
       {/* Bottom controls */}
       <motion.div
@@ -123,6 +149,40 @@ export default function App() {
         onClose={() => setSelectedDiary(null)}
         onDelete={deleteDiary}
       />
+
+      {/* 旧数据迁移提示 */}
+      {hasLegacyData && (
+        <motion.div
+          className="absolute bottom-24 left-1/2 -translate-x-1/2 z-20"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+        >
+          <div className="glass-strong rounded-xl px-5 py-4 text-sm text-white/80 flex items-center gap-4">
+            <div>
+              <p className="font-medium">发现本地旧数据 📦</p>
+              <p className="text-white/50 text-xs mt-0.5">是否迁移到云端账号？迁移后所有设备都能看到。</p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={dismissMigration}
+                className="px-3 py-1.5 rounded-lg border border-white/10 text-white/40
+                           hover:text-white/60 hover:border-white/20 transition-all cursor-pointer text-xs"
+              >
+                不需要
+              </button>
+              <button
+                type="button"
+                onClick={migrateLegacy}
+                className="px-3 py-1.5 rounded-lg bg-indigo-500/20 border border-indigo-500/30
+                           text-white hover:bg-indigo-500/30 transition-all cursor-pointer text-xs"
+              >
+                迁移到云端
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }
