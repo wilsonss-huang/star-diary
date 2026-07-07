@@ -1,6 +1,11 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, protocol, net } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
+
+// 注册自定义协议（必须在 app.ready 之前），解决 file:// 下 CloudBase API 的 CORS 问题
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'stardiary', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } },
+]);
 
 let mainWindow = null;
 
@@ -27,8 +32,8 @@ function createWindow() {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    // In production, load the built files
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    // 生产环境用自定义协议替代 file://，确保 CloudBase API 正常工作
+    mainWindow.loadURL('stardiary://./index.html');
   }
 
   // Open external links in browser
@@ -43,11 +48,25 @@ function createWindow() {
 }
 
 // ============================================================
+// 自定义协议处理：stardiary:// → 映射到 dist 目录
+// ============================================================
+
+function setupProtocol() {
+  protocol.handle('stardiary', (request) => {
+    const url = new URL(request.url);
+    // stardiary://./index.html → dist/index.html
+    let filePath = url.pathname.replace(/^\//, '');
+    if (!filePath || filePath === '') filePath = 'index.html';
+    const fullPath = path.join(__dirname, '../dist', filePath);
+    return net.fetch('file:///' + fullPath.replace(/\\/g, '/'));
+  });
+}
+
+// ============================================================
 // 自动更新
 // ============================================================
 
 function setupAutoUpdater() {
-  // 开发环境不检查更新
   if (process.env.VITE_DEV_SERVER_URL) {
     console.log('[AutoUpdater] 开发模式，跳过更新检查');
     return;
@@ -55,10 +74,6 @@ function setupAutoUpdater() {
 
   autoUpdater.logger = console;
   autoUpdater.autoDownload = true;
-
-  autoUpdater.on('checking-for-update', () => {
-    console.log('[AutoUpdater] 正在检查更新...');
-  });
 
   autoUpdater.on('update-available', (info) => {
     console.log('[AutoUpdater] 发现新版本:', info.version);
@@ -74,7 +89,6 @@ function setupAutoUpdater() {
 
   autoUpdater.on('update-downloaded', () => {
     console.log('[AutoUpdater] 更新已下载，提示用户重启');
-    // 弹出对话框，用户确认后重启安装
     const { dialog } = require('electron');
     dialog.showMessageBox({
       type: 'info',
@@ -92,7 +106,6 @@ function setupAutoUpdater() {
     console.error('[AutoUpdater] 更新出错:', err.message);
   });
 
-  // 启动 5 秒后检查更新（等窗口加载完）
   setTimeout(() => {
     autoUpdater.checkForUpdatesAndNotify();
   }, 5000);
@@ -101,6 +114,7 @@ function setupAutoUpdater() {
 // ============================================================
 
 app.whenReady().then(() => {
+  setupProtocol();
   createWindow();
   setupAutoUpdater();
 });
