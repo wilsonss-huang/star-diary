@@ -13,13 +13,16 @@ interface AuthUser {
 interface AuthState {
   currentUser: AuthUser | null;
   isLoading: boolean;
+  rememberedPhone: string | null;
   sendCode: (phoneNumber: string) => Promise<{ verifyOtp: (code: string) => Promise<void> }>;
   logout: () => Promise<void>;
+  clearRemembered: () => void;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
 
 const CACHED_USER_KEY = 'star-diary-user';
+const REMEMBERED_PHONE_KEY = 'star-diary-remembered-phone';
 
 function getCachedUser(): AuthUser | null {
   try {
@@ -38,9 +41,42 @@ function setCachedUser(user: AuthUser | null): void {
   }
 }
 
+// 记忆数据：{ phone: string, uid: string } | 兼容旧格式纯字符串
+interface RememberedData {
+  phone: string;
+  uid: string;
+}
+
+function getRememberedPhone(): string | null {
+  try {
+    const raw = localStorage.getItem(REMEMBERED_PHONE_KEY);
+    if (!raw) return null;
+    // 兼容旧格式：纯手机号字符串
+    if (!raw.startsWith('{')) return raw;
+    const data: RememberedData = JSON.parse(raw);
+    return data.phone || null;
+  } catch {
+    return null;
+  }
+}
+
+function setRememberedPhone(phone: string, uid?: string): void {
+  try {
+    const data: RememberedData = { phone, uid: uid || '' };
+    localStorage.setItem(REMEMBERED_PHONE_KEY, JSON.stringify(data));
+  } catch { /* ignore */ }
+}
+
+function clearRememberedPhone(): void {
+  try {
+    localStorage.removeItem(REMEMBERED_PHONE_KEY);
+  } catch { /* ignore */ }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [rememberedPhone, setRememberedPhoneState] = useState<string | null>(getRememberedPhone);
 
   useEffect(() => {
     // 优先用 CloudBase 持久化的登录态，其次用 localStorage 缓存
@@ -62,9 +98,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return {
       verifyOtp: async (code: string) => {
         const { uid } = await verifyOtp(code);
-        const user = { uid, phone: phoneNumber };
+        // 去掉 +86 前缀统一存储
+        const rawPhone = phoneNumber.replace(/^\+86/, '');
+        const user = { uid, phone: rawPhone };
         setCurrentUser(user);
         setCachedUser(user);
+        // 记住此设备登录过的手机号 + uid（用于一键登录恢复日记）
+        setRememberedPhone(rawPhone, uid);
+        setRememberedPhoneState(rawPhone);
       },
     };
   }, []);
@@ -73,10 +114,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await cbLogout();
     setCurrentUser(null);
     setCachedUser(null);
+    // 退出登录不清除记忆的手机号，方便下次快速登录
+  }, []);
+
+  const clearRemembered = useCallback(() => {
+    clearRememberedPhone();
+    setRememberedPhoneState(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ currentUser, isLoading, sendCode, logout }}>
+    <AuthContext.Provider value={{ currentUser, isLoading, rememberedPhone, sendCode, logout, clearRemembered }}>
       {children}
     </AuthContext.Provider>
   );

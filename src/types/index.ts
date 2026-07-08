@@ -7,6 +7,10 @@ export interface DiaryEntry {
   emotion: Emotion;
   createdAt: string;
   starPosition: [number, number, number];
+  photoFileIds: string[];
+  photoUrls: string[];
+  isBookmarked: boolean;
+  date: string; // YYYY-MM-DD for date-based search
 }
 
 export interface EmotionConfig {

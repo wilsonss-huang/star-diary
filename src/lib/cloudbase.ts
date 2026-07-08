@@ -70,6 +70,11 @@ export function getCurrentUser(): { uid: string; phone: string } | null {
   return null;
 }
 
+/** 检查 CloudBase 是否有有效的登录会话（token 未过期） */
+export function hasValidSession(): boolean {
+  return !!(auth.currentUser && auth.currentUser.uid);
+}
+
 export async function logout(): Promise<void> {
   await auth.signOut();
   try { localStorage.removeItem(CACHED_USER_KEY); } catch { /* ignore */ }
@@ -88,6 +93,9 @@ interface CloudDiary {
   starPosition: [number, number, number];
   userId: string;
   createdAt: number;
+  photoFileIds?: string[];
+  isBookmarked?: boolean;
+  date?: string;
 }
 
 function getUserId(): string {
@@ -118,11 +126,15 @@ export async function fetchDiaries(): Promise<DiaryEntry[]> {
     emotion: d.emotion as Emotion,
     createdAt: new Date(d.createdAt).toISOString(),
     starPosition: d.starPosition || [0, 0, 0],
+    photoFileIds: d.photoFileIds || [],
+    photoUrls: [],
+    isBookmarked: d.isBookmarked || false,
+    date: d.date || new Date(d.createdAt).toISOString().slice(0, 10),
   }));
 }
 
 export async function saveDiaryToCloud(
-  data: Omit<DiaryEntry, 'id' | 'createdAt'>,
+  data: Omit<DiaryEntry, 'id' | 'createdAt' | 'photoUrls'>,
 ): Promise<string> {
   const uid = getUserId();
   console.log('[CloudBase] saveDiaryToCloud, uid:', uid, 'title:', data.title);
@@ -133,11 +145,74 @@ export async function saveDiaryToCloud(
     starPosition: data.starPosition,
     userId: uid,
     createdAt: Date.now(),
+    photoFileIds: data.photoFileIds || [],
+    isBookmarked: data.isBookmarked || false,
+    date: data.date || new Date().toISOString().slice(0, 10),
   });
   console.log('[CloudBase] saveDiaryToCloud 结果:', res);
   return (res as any).id as string;
 }
 
-export async function deleteDiaryFromCloud(diaryId: string): Promise<void> {
+export async function deleteDiaryFromCloud(diaryId: string, photoFileIds?: string[]): Promise<void> {
+  if (photoFileIds && photoFileIds.length > 0) {
+    try { await deletePhotos(photoFileIds); } catch (e) { console.error('删除照片失败:', e); }
+  }
   await db.collection('diaries').doc(diaryId).remove();
+}
+
+// ============================================================
+// 照片存储 API（使用新 storage.from() API）
+// ============================================================
+
+export async function uploadPhoto(file: File): Promise<string> {
+  const uid = getUserId();
+  const cloudPath = `photos/${uid}/${Date.now()}_${file.name}`;
+  console.log('[CloudBase] 上传照片:', cloudPath);
+  const { error } = await app.storage.from().upload(cloudPath, file);
+  if (error) {
+    console.error('[CloudBase] 上传照片失败:', error);
+    throw new Error(error.message || '上传失败');
+  }
+  // 拼接完整 CloudBase fileID: cloud://env.bucket/path
+  // getTempFileURL / deleteFile 需要 cloud:// 格式的 ID
+  const fileId = `cloud://${ENV}.${ENV}/${cloudPath}`;
+  console.log('[CloudBase] 上传成功, fileID:', fileId);
+  return fileId;
+}
+
+export async function getPhotoUrls(fileIds: string[]): Promise<string[]> {
+  if (fileIds.length === 0) return [];
+  // 确保都是完整的 cloud:// 格式 ID
+  const ids = fileIds.map(id => id.startsWith('cloud://') ? id : `cloud://${ENV}.${ENV}/${id}`);
+  console.log('[CloudBase] 获取照片链接, IDs:', ids);
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { fileList } = await (app as any).getTempFileURL({ fileList: ids });
+    console.log('[CloudBase] 获取链接结果:', fileList?.length, '条');
+    return (fileList || []).map((f: any) => f.tempFileURL).filter(Boolean);
+  } catch (e) {
+    console.error('获取照片链接失败:', e);
+    return [];
+  }
+}
+
+export async function deletePhotos(fileIds: string[]): Promise<void> {
+  if (fileIds.length === 0) return;
+  const ids = fileIds.map(id => id.startsWith('cloud://') ? id : `cloud://${ENV}.${ENV}/${id}`);
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (app as any).deleteFile({ fileList: ids });
+    console.log('[CloudBase] 删除照片:', ids.length, '张');
+  } catch (e) {
+    console.error('删除照片失败:', e);
+  }
+}
+
+// ============================================================
+// 收藏 API
+// ============================================================
+
+export async function updateDiaryBookmark(diaryId: string, isBookmarked: boolean): Promise<void> {
+  await db.collection('diaries').doc(diaryId).update({ isBookmarked });
+  console.log('[CloudBase] 更新收藏:', diaryId, isBookmarked);
 }

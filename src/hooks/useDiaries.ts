@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import Fuse from 'fuse.js';
 import type { DiaryEntry, Emotion } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchDiaries, saveDiaryToCloud, deleteDiaryFromCloud } from '../lib/cloudbase';
+import { fetchDiaries, saveDiaryToCloud, deleteDiaryFromCloud, updateDiaryBookmark } from '../lib/cloudbase';
 
 const STORAGE_KEY = 'star-diary-entries';
 
@@ -79,6 +79,9 @@ export function useDiaries() {
           content: legacy[i].content,
           emotion: legacy[i].emotion,
           starPosition: legacy[i].starPosition,
+          photoFileIds: legacy[i].photoFileIds || [],
+          isBookmarked: legacy[i].isBookmarked || false,
+          date: legacy[i].date || legacy[i].createdAt?.slice(0, 10) || new Date().toISOString().slice(0, 10),
         });
       } catch (err) {
         console.error(`迁移第 ${i + 1} 条失败:`, err);
@@ -101,13 +104,14 @@ export function useDiaries() {
   }, []);
 
   const saveDiary = useCallback(
-    async (title: string, content: string, emotion: Emotion) => {
+    async (title: string, content: string, emotion: Emotion, photoFileIds: string[] = []) => {
       if (!currentUser) throw new Error('未登录');
 
       const starPosition = randomStarPosition();
-      const id = await saveDiaryToCloud({ title, content, emotion, starPosition });
+      const date = new Date().toISOString().slice(0, 10);
+      const id = await saveDiaryToCloud({ title, content, emotion, starPosition, photoFileIds, isBookmarked: false, date });
 
-      const entry: DiaryEntry = { id, title, content, emotion, createdAt: new Date().toISOString(), starPosition };
+      const entry: DiaryEntry = { id, title, content, emotion, createdAt: new Date().toISOString(), starPosition, photoFileIds, photoUrls: [], isBookmarked: false, date };
       setDiaries((prev) => [...prev, entry]);
       return entry;
     },
@@ -115,10 +119,11 @@ export function useDiaries() {
   );
 
   const deleteDiary = useCallback(async (diaryId: string) => {
+    const target = diaries.find(d => d.id === diaryId);
     // 乐观更新：先移除 UI
     setDiaries((prev) => prev.filter((d) => d.id !== diaryId));
     try {
-      await deleteDiaryFromCloud(diaryId);
+      await deleteDiaryFromCloud(diaryId, target?.photoFileIds);
     } catch (err) {
       console.error('删除失败:', err);
       // 云端删除失败，重新拉取恢复正确状态
@@ -129,7 +134,7 @@ export function useDiaries() {
         console.error('恢复日记列表失败:', refetchErr);
       }
     }
-  }, []);
+  }, [diaries]);
 
   // Fuse 搜索实例随 diaries 自动重建
   const fuse = useMemo(() => {
@@ -149,6 +154,22 @@ export function useDiaries() {
     },
     [fuse],
   );
+
+  const toggleBookmark = useCallback(async (diaryId: string) => {
+    const diary = diaries.find(d => d.id === diaryId);
+    if (!diary) return;
+    const newVal = !diary.isBookmarked;
+    // 乐观更新
+    setDiaries(prev => prev.map(d => d.id === diaryId ? { ...d, isBookmarked: newVal } : d));
+    try {
+      await updateDiaryBookmark(diaryId, newVal);
+    } catch (err) {
+      console.error('更新收藏失败:', err);
+      setDiaries(prev => prev.map(d => d.id === diaryId ? { ...d, isBookmarked: !newVal } : d));
+    }
+  }, [diaries]);
+
+  const bookmarkedDiaries = useMemo(() => diaries.filter(d => d.isBookmarked), [diaries]);
 
   const emotionStats = useMemo(() => {
     const stats: Record<Emotion, number> = { happy: 0, sad: 0, excited: 0, calm: 0, love: 0, thoughtful: 0 };
@@ -170,5 +191,7 @@ export function useDiaries() {
     migrateLegacy,
     dismissMigration,
     refreshDiaries,
+    toggleBookmark,
+    bookmarkedDiaries,
   };
 }
