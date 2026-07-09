@@ -1,7 +1,7 @@
 {
   "name": "star-diary",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "星空日记 - 每篇日记化作一颗星星，挂在夜空中",
   "author": "",
   "type": "module",

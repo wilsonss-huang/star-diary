@@ -100,6 +100,18 @@ function StarFieldScene({ diaries, highlightedIds, focusedDiaryId, onStarClick, 
     [diaries, highlightedIds],
   );
 
+  // Initial camera target: center of all diary stars, or default
+  const initialTarget = useMemo(() => {
+    if (diaries.length === 0) return [0, 2.5, 0] as [number, number, number];
+    let sx = 0, sy = 0, sz = 0;
+    for (const d of diaries) {
+      sx += d.starPosition[0];
+      sy += d.starPosition[1];
+      sz += d.starPosition[2];
+    }
+    return [sx / diaries.length, sy / diaries.length, sz / diaries.length] as [number, number, number];
+  }, [diaries]);
+
   const handleStarClick = useCallback(
     (diary: DiaryEntry) => onStarClick(diary),
     [onStarClick],
@@ -141,7 +153,7 @@ function StarFieldScene({ diaries, highlightedIds, focusedDiaryId, onStarClick, 
         maxDistance={60}
         maxPolarAngle={Math.PI}
         minPolarAngle={0}
-        target={[0, 2.5, 0]}
+        target={initialTarget}
         zoomSpeed={0.95}
         rotateSpeed={0.68}
         panSpeed={0.58}
@@ -161,7 +173,7 @@ export default function StarField(props: StarFieldProps) {
       transition={{ duration: 1.2 }}
     >
       <Canvas
-        camera={{ position: [0, 3.2, 17], fov: 55 }}
+        camera={{ position: [0, 5, 18], fov: 55 }}
         dpr={[1, 2]}
         gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.18 }}
       >
