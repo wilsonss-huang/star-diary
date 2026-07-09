@@ -4,7 +4,7 @@
 
 ---
 
-## 📱 手机版（在线）
+## 📱 在线版
 
 **👉 [点击打开](https://wilsonss-huang.github.io/star-diary/)** — 手机/电脑浏览器都能用
 
@@ -12,7 +12,7 @@
 
 ## 💻 Windows 桌面版（下载）
 
-**👉 [下载最新版 (v1.0.1)](https://github.com/wilsonss-huang/star-diary/releases/latest)** — 下载 `星空日记 Setup 1.0.1.exe`
+**👉 [下载最新版 (v1.0.2)](https://github.com/wilsonss-huang/star-diary/releases/latest)** — 下载 `星空日记 Setup 1.0.2.exe`
 
 > 双击安装，后续版本自动更新，无需手动下载！
 
@@ -20,20 +20,23 @@
 
 ## ✨ 功能
 
-- 📱 **手机验证码登录** — 输入手机号 + 验证码即可登录，首次自动注册
-- ☁️ **云端同步** — 日记自动保存到云端，换设备登录后数据自动恢复
+- 📱 **手机验证码登录** — 输入手机号 + 验证码，首次自动注册
+- 🧠 **登录记忆** — 登录后自动记住，下次打开一键登录
+- ☁️ **云端同步** — 日记自动保存到云端，换设备登录自动恢复
+- ✏️ **编辑日记** — 支持修改已发布的日记
 - 🔄 **自动更新** — 新版本自动推送，点击重启即可升级
 - 📝 写日记 → 一颗星星出现在夜空中
 - 😊 6 种情绪颜色（开心/难过/兴奋/平静/心动/沉思）
-- 🔍 搜索日记，匹配的星星会高亮连线
+- 🔍 搜索 + 日期筛选，匹配的星星高亮连线
+- ⭐ 收藏星星，侧边栏快速查看
+- 🎥 点击星星，摄像机平滑推近
 - 🌌 3D 星空，鼠标拖拽旋转缩放
-- 📤 数据导出/导入备份
 - 📱 支持 PWA，手机可添加到主屏幕
 
 ## 🛠 技术栈
 
-React 19 · Three.js · TypeScript · Tailwind CSS · Framer Motion · Electron · CloudBase
+React 19 · Three.js · TypeScript · Tailwind CSS · Framer Motion · Electron · CloudBase · Lucide React
 
 ## 🔒 隐私
 
-日记数据加密存储在腾讯云 CloudBase，每位用户只能访问自己的日记。
+日记数据存储在腾讯云 CloudBase，每位用户只能访问自己的日记。
