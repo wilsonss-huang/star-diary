@@ -7,6 +7,7 @@ import { getStarBodyTexture, getStarGlowTexture } from './StarTexture';
 
 interface DiaryStarSpriteProps {
   diary: DiaryEntry;
+  displayPosition: [number, number, number];
   isHighlighted: boolean;
   onClick: (diary: DiaryEntry) => void;
   isNew: boolean;
@@ -27,7 +28,7 @@ function hashParams(id: string) {
   };
 }
 
-export default function DiaryStarSprite({ diary, isHighlighted, onClick, isNew }: DiaryStarSpriteProps) {
+export default function DiaryStarSprite({ diary, displayPosition, isHighlighted, onClick, isNew }: DiaryStarSpriteProps) {
   const groupRef = useRef<THREE.Group>(null);
   const bodyRef = useRef<THREE.Sprite>(null);
   const glowRef = useRef<THREE.Sprite>(null);
@@ -50,6 +51,7 @@ export default function DiaryStarSprite({ diary, isHighlighted, onClick, isNew }
   useFrame((state) => {
     if (!groupRef.current) return;
     const t = state.clock.elapsedTime;
+    const basePos = displayPosition;
 
     // When hovered, freeze the animation — star stops twinkling
     const frozen = isHovered.current;
@@ -88,6 +90,15 @@ export default function DiaryStarSprite({ diary, isHighlighted, onClick, isNew }
 
     const pulse = frozen ? 1 : 1 + scint * 0.25;
     const targetScale = baseScale * pulse;
+    groupRef.current.position.lerp(
+      new THREE.Vector3(
+        basePos[0] + Math.sin(t * 0.55 + p.phase2) * 0.08,
+        basePos[1] + Math.sin(t * 0.9 + p.phase1) * 0.22,
+        basePos[2] + Math.cos(t * 0.5 + p.phase3) * 0.06,
+      ),
+      0.08,
+    );
+
     groupRef.current.scale.lerp(
       new THREE.Vector3(targetScale, targetScale, targetScale),
       0.08,
@@ -110,11 +121,11 @@ export default function DiaryStarSprite({ diary, isHighlighted, onClick, isNew }
   }, [diary, onClick]);
 
   return (
-    <group ref={groupRef} scale={[initialScale, initialScale, initialScale]}>
+    <group ref={groupRef} position={displayPosition} scale={[initialScale, initialScale, initialScale]}>
       {/* Back glow — colored by emotion */}
       <sprite
         ref={glowRef}
-        position={diary.starPosition}
+        position={[0, 0, 0]}
         scale={[isHighlighted ? 2.6 : 2.0, isHighlighted ? 2.6 : 2.0, 1]}
       >
         <spriteMaterial map={glowTex} color={color} transparent opacity={0.55}
@@ -124,7 +135,7 @@ export default function DiaryStarSprite({ diary, isHighlighted, onClick, isNew }
       {/* Front body — white diffraction spikes, NO color tint */}
       <sprite
         ref={bodyRef}
-        position={diary.starPosition}
+        position={[0, 0, 0]}
         scale={[isHighlighted ? 1.1 : 0.75, isHighlighted ? 1.1 : 0.75, 1]}
       >
         <spriteMaterial map={bodyTex} transparent opacity={0.65}
@@ -134,7 +145,7 @@ export default function DiaryStarSprite({ diary, isHighlighted, onClick, isNew }
       {/* Tiny white-hot core */}
       <sprite
         ref={coreRef}
-        position={diary.starPosition}
+        position={[0, 0, 0]}
         scale={[isHighlighted ? 0.3 : 0.2, isHighlighted ? 0.3 : 0.2, 1]}
       >
         <spriteMaterial map={glowTex} transparent opacity={0.8}
@@ -145,7 +156,7 @@ export default function DiaryStarSprite({ diary, isHighlighted, onClick, isNew }
       {diary.isBookmarked && (
         <sprite
           ref={bookmarkRef}
-          position={[diary.starPosition[0], diary.starPosition[1] + 0.2, diary.starPosition[2]]}
+          position={[0, 0.2, 0]}
           scale={[1.1, 1.1, 1]}
         >
           <spriteMaterial map={glowTex} color="#FFD700" transparent opacity={0.5}
@@ -154,7 +165,7 @@ export default function DiaryStarSprite({ diary, isHighlighted, onClick, isNew }
       )}
 
       {/* Hover glow — appears when mouse is over the star */}
-      <sprite ref={hoverSpriteRef} position={diary.starPosition} scale={[1.3, 1.3, 1]}>
+      <sprite ref={hoverSpriteRef} position={[0, 0, 0]} scale={[1.3, 1.3, 1]}>
         <spriteMaterial map={glowTex} color="#ffffff" transparent opacity={0}
           blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
       </sprite>
@@ -163,7 +174,7 @@ export default function DiaryStarSprite({ diary, isHighlighted, onClick, isNew }
       {hasPhotos && (
         <sprite
           ref={photoRef}
-          position={[diary.starPosition[0], diary.starPosition[1] + 0.6, diary.starPosition[2]]}
+          position={[0, 0.6, 0]}
           scale={[0.2, 0.2, 1]}
         >
           <spriteMaterial map={glowTex} color="#FFD700" transparent opacity={0.25}
@@ -173,7 +184,7 @@ export default function DiaryStarSprite({ diary, isHighlighted, onClick, isNew }
 
       {/* Large click target — easy to hit */}
       <mesh
-        position={diary.starPosition}
+        position={[0, 0, 0]}
         onClick={handleClick}
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}

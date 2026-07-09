@@ -11,7 +11,7 @@ const emotions = Object.entries(EMOTION_MAP) as [Emotion, typeof EMOTION_MAP[Emo
 
 export default function EmotionSelector({ selected, onSelect }: EmotionSelectorProps) {
   return (
-    <div className="flex gap-3 flex-wrap justify-center">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       {emotions.map(([key, config]) => {
         const isSelected = selected === key;
         return (
@@ -19,41 +19,34 @@ export default function EmotionSelector({ selected, onSelect }: EmotionSelectorP
             key={key}
             type="button"
             onClick={() => onSelect(key)}
-            className="relative px-5 py-3 rounded-2xl transition-all duration-300 cursor-pointer
-                       flex items-center gap-2.5 text-sm"
+            className={`relative flex min-h-[68px] items-center gap-3 rounded-2xl border px-4 text-left
+                        transition-all duration-200 ${
+              isSelected
+                ? 'bg-white/[0.08] text-white/92'
+                : 'bg-white/[0.028] text-white/48 hover:bg-white/[0.055] hover:text-white/76'
+            }`}
             style={{
-              backgroundColor: isSelected ? config.color + '20' : 'rgba(255,255,255,0.04)',
-              borderColor: isSelected ? config.color : 'rgba(255,255,255,0.08)',
-              borderWidth: 1,
-              color: isSelected ? config.color : 'rgba(255,255,255,0.55)',
-              boxShadow: isSelected ? `0 0 20px ${config.color}25` : 'none',
+              borderColor: isSelected ? `${config.color}66` : 'rgba(255,255,255,0.07)',
+              boxShadow: isSelected ? `0 0 24px ${config.color}22, inset 0 1px 0 rgba(255,255,255,0.09)` : 'none',
             }}
-            whileTap={{ scale: 0.96 }}
-            animate={{
-              scale: isSelected ? 1.06 : 1,
-              borderColor: isSelected ? config.color : 'rgba(255,255,255,0.08)',
-            }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            whileTap={{ scale: 0.97 }}
+            animate={{ y: isSelected ? -1 : 0 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 24 }}
           >
-            <motion.span
-              className="text-lg"
-              animate={{ scale: isSelected ? 1.15 : 1 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-            >
-              {config.emoji}
-            </motion.span>
-            <span>{config.label}</span>
-
-            {isSelected && (
-              <motion.div
-                className="absolute inset-0 rounded-2xl pointer-events-none"
-                layoutId="emotion-glow"
-                style={{
-                  boxShadow: `inset 0 0 8px ${config.color}25, 0 0 12px ${config.color}15`,
-                }}
-                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl">
+              <span
+                className="absolute inset-0 rounded-2xl blur-md"
+                style={{ backgroundColor: config.color, opacity: isSelected ? 0.34 : 0.16 }}
               />
-            )}
+              <span
+                className="relative h-4 w-4 rounded-full border border-white/35"
+                style={{ backgroundColor: config.color, boxShadow: `0 0 16px ${config.color}` }}
+              />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-medium">{config.label}</span>
+              <span className="mt-1 block text-[11px] text-white/24">情绪星点</span>
+            </span>
           </motion.button>
         );
       })}

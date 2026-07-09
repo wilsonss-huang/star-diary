@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ImagePlus, X } from 'lucide-react';
 
 interface PhotoUploaderProps {
   files: File[];
@@ -27,7 +28,7 @@ export default function PhotoUploader({ files, onFilesChange, maxPhotos = 3 }: P
           return;
         }
         if (f.size > MAX_SIZE) {
-          setError('单张照片不超过 10MB');
+          setError('单张照片不能超过 10MB');
           return;
         }
       }
@@ -46,13 +47,9 @@ export default function PhotoUploader({ files, onFilesChange, maxPhotos = 3 }: P
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-white/35 text-xs flex items-center gap-2">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-            <circle cx="8.5" cy="8.5" r="1.5" />
-            <polyline points="21 15 16 10 5 21" />
-          </svg>
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <span className="flex items-center gap-2 text-xs text-white/36">
+          <ImagePlus size={15} strokeWidth={1.5} />
           照片 ({files.length}/{maxPhotos})
         </span>
         {files.length < maxPhotos && (
@@ -68,26 +65,30 @@ export default function PhotoUploader({ files, onFilesChange, maxPhotos = 3 }: P
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="text-xs text-white/30 hover:text-white/60 transition-colors cursor-pointer
-                         px-3.5 py-2 rounded-xl border border-white/[0.07] hover:border-white/15"
+              className="inline-flex min-h-10 items-center gap-2 rounded-2xl border border-white/[0.08]
+                         bg-white/[0.035] px-4 text-xs text-white/42 transition-all
+                         hover:border-white/16 hover:bg-white/[0.06] hover:text-white/72"
             >
-              + 添加照片
+              <ImagePlus size={14} strokeWidth={1.5} />
+              添加照片
             </button>
           </>
         )}
       </div>
 
       {error && (
-        <p className="text-red-400/60 text-xs mb-3">{error}</p>
+        <p className="mb-4 rounded-2xl border border-red-300/14 bg-red-500/[0.06] px-4 py-3 text-xs text-red-200/72">
+          {error}
+        </p>
       )}
 
       {files.length > 0 && (
-        <div className="flex gap-3 flex-wrap">
+        <div className="flex flex-wrap gap-3">
           <AnimatePresence>
             {files.map((file, i) => (
               <motion.div
                 key={`${file.name}-${i}`}
-                className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/[0.08]"
+                className="relative h-24 w-24 overflow-hidden rounded-2xl border border-white/[0.08]"
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0, opacity: 0 }}
@@ -95,18 +96,15 @@ export default function PhotoUploader({ files, onFilesChange, maxPhotos = 3 }: P
                 <img
                   src={URL.createObjectURL(file)}
                   alt={file.name}
-                  className="w-full h-full object-cover"
+                  className="h-full w-full object-cover"
                 />
                 <button
                   type="button"
                   onClick={() => removeFile(i)}
-                  className="absolute top-0 right-0 w-6 h-6 bg-black/50 rounded-bl-xl
-                             flex items-center justify-center text-white/50 hover:text-white
-                             hover:bg-red-500/50 transition-all cursor-pointer"
+                  className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full
+                             bg-black/55 text-white/60 transition-all hover:bg-red-500/65 hover:text-white"
                 >
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" d="M18 6L6 18M6 6l12 12" />
-                  </svg>
+                  <X size={13} strokeWidth={1.8} />
                 </button>
               </motion.div>
             ))}

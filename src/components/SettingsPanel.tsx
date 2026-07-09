@@ -10,7 +10,7 @@ export default function SettingsPanel(_props: { refreshDiaries: () => void }) {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="absolute top-5 right-5 z-10 w-10 h-10 rounded-xl glass
+        className="absolute top-5 right-20 z-10 w-10 h-10 rounded-xl glass
                    flex items-center justify-center cursor-pointer
                    hover:bg-white/10 transition-all active:scale-95"
         title="关于星空日记"

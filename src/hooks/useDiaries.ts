@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import Fuse from 'fuse.js';
 import type { DiaryEntry, Emotion } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchDiaries, saveDiaryToCloud, deleteDiaryFromCloud, updateDiaryBookmark } from '../lib/cloudbase';
+import { fetchDiaries, saveDiaryToCloud, deleteDiaryFromCloud, updateDiaryBookmark, updateDiaryInCloud } from '../lib/cloudbase';
 
 const STORAGE_KEY = 'star-diary-entries';
 
@@ -61,6 +61,12 @@ export function useDiaries() {
         setDiaries(cloudDiaries);
       } catch (err) {
         console.error('加载日记失败:', err);
+        if (err instanceof Error) {
+          console.error('  错误信息:', err.message);
+          console.error('  错误堆栈:', err.stack);
+        }
+        // CloudBase 错误对象可能不是 Error 实例，尝试打印完整结构
+        try { console.error('  完整错误:', JSON.stringify(err, null, 2)); } catch { /* ignore */ }
       } finally {
         if (!cancelled) setIsCloudLoading(false);
       }
@@ -136,6 +142,18 @@ export function useDiaries() {
     }
   }, [diaries]);
 
+  const updateDiary = useCallback(async (diaryId: string, updates: Pick<DiaryEntry, 'title' | 'content' | 'emotion'>) => {
+    const previous = diaries.find(d => d.id === diaryId);
+    setDiaries(prev => prev.map(d => d.id === diaryId ? { ...d, ...updates } : d));
+    try {
+      await updateDiaryInCloud(diaryId, updates);
+    } catch (err) {
+      console.error('鏇存柊鏃ヨ澶辫触:', err);
+      if (previous) setDiaries(prev => prev.map(d => d.id === diaryId ? previous : d));
+      throw err;
+    }
+  }, [diaries]);
+
   // Fuse 搜索实例随 diaries 自动重建
   const fuse = useMemo(() => {
     return new Fuse(diaries, {
@@ -154,6 +172,10 @@ export function useDiaries() {
     },
     [fuse],
   );
+
+  const highlightDiaries = useCallback((ids: string[]) => {
+    setHighlightedIds(ids);
+  }, []);
 
   const toggleBookmark = useCallback(async (diaryId: string) => {
     const diary = diaries.find(d => d.id === diaryId);
@@ -180,9 +202,11 @@ export function useDiaries() {
   return {
     diaries,
     saveDiary,
+    updateDiary,
     deleteDiary,
     searchQuery,
     searchDiaries,
+    highlightDiaries,
     highlightedIds,
     emotionStats,
     totalCount: diaries.length,

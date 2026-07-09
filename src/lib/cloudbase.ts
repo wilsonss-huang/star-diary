@@ -43,6 +43,18 @@ export async function sendPhoneCode(phoneNumber: string): Promise<{
   };
 }
 
+export async function updateDiaryInCloud(
+  diaryId: string,
+  data: Pick<DiaryEntry, 'title' | 'content' | 'emotion'>,
+): Promise<void> {
+  await db.collection('diaries').doc(diaryId).update({
+    title: data.title,
+    content: data.content,
+    emotion: data.emotion,
+  });
+  console.log('[CloudBase] updateDiary:', diaryId);
+}
+
 // ---- 用户信息缓存（localStorage 兜底，防止 auth.currentUser 延迟） ----
 
 const CACHED_USER_KEY = 'star-diary-user';

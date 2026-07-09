@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import SplashScreen from './components/SplashScreen';
 import StarField from './components/StarField';
@@ -8,9 +8,9 @@ import SearchBar from './components/SearchBar';
 import AuthScreen from './components/AuthScreen';
 import SettingsPanel from './components/SettingsPanel';
 import Sidebar from './components/Sidebar';
+import AccountMenu from './components/AccountMenu';
 import { useDiaries } from './hooks/useDiaries';
 import { useAuth } from './contexts/AuthContext';
-import { fetchDiaries, saveDiaryToCloud } from './lib/cloudbase';
 import type { DiaryEntry, Emotion } from './types';
 import { SparkleIcon, GalaxyIcon } from './components/Icons';
 
@@ -31,9 +31,11 @@ export default function App() {
   const {
     diaries,
     saveDiary,
+    updateDiary,
     deleteDiary,
     searchQuery,
     searchDiaries,
+    highlightDiaries,
     highlightedIds,
     totalCount,
     emotionStats,
@@ -49,8 +51,11 @@ export default function App() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [selectedDiary, setSelectedDiary] = useState<DiaryEntry | null>(null);
   const [newStarId, setNewStarId] = useState<string | null>(null);
-  const [starStyle, setStarStyle] = useState<'realistic' | 'dark'>('dark');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const activeDiary = useMemo(
+    () => selectedDiary ? (diaries.find((diary) => diary.id === selectedDiary.id) || selectedDiary) : null,
+    [diaries, selectedDiary],
+  );
 
   const handleSave = useCallback(
     async (title: string, content: string, emotion: Emotion, photoFileIds?: string[]) => {
@@ -71,7 +76,7 @@ export default function App() {
   }, []);
 
   // Keyboard shortcuts
-  useMemo(() => {
+  useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
         e.preventDefault();
@@ -86,41 +91,10 @@ export default function App() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  // Export/Import handlers
-  const handleExport = useCallback(async () => {
-    try {
-      const allDiaries = await fetchDiaries();
-      const blob = new Blob([JSON.stringify(allDiaries, null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `star-diary-backup-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-    } catch { /* ignore */ }
-  }, []);
-
-  const handleImport = useCallback(async () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      try {
-        const data = JSON.parse(await file.text()) as DiaryEntry[];
-        if (!Array.isArray(data)) return;
-        for (const entry of data) {
-          await saveDiaryToCloud({
-            title: entry.title, content: entry.content,
-            emotion: entry.emotion, starPosition: entry.starPosition,
-            photoFileIds: entry.photoFileIds || [], isBookmarked: entry.isBookmarked || false,
-            date: entry.date || entry.createdAt.slice(0, 10),
-          });
-        }
-        refreshDiaries();
-      } catch { /* ignore */ }
-    };
-    input.click();
-  }, [refreshDiaries]);
+  const handleSwitchAccount = useCallback(async () => {
+    sessionStorage.setItem('star-diary-skip-welcome', '1');
+    await logout();
+  }, [logout]);
 
   // Splash screen
   if (!splash.shown) {
@@ -159,13 +133,14 @@ export default function App() {
       <StarField
         diaries={diaries}
         highlightedIds={highlightedIds}
+        focusedDiaryId={activeDiary?.id || null}
         onStarClick={setSelectedDiary}
         newStarId={newStarId}
-        starStyle={starStyle}
       />
 
       <SearchBar
         onSearch={searchDiaries}
+        onHighlightIds={highlightDiaries}
         results={searchResults}
         onResultClick={handleSearchResultClick}
         totalCount={totalCount}
@@ -175,21 +150,22 @@ export default function App() {
 
       <Sidebar
         isOpen={sidebarOpen}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        onOpen={() => setSidebarOpen(true)}
+        onClose={() => setSidebarOpen(false)}
+        onToggle={() => setSidebarOpen((value) => !value)}
         diaries={diaries}
         bookmarkedDiaries={bookmarkedDiaries}
         emotionStats={emotionStats}
-        starStyle={starStyle}
-        onStarStyleChange={setStarStyle}
         onDiaryClick={setSelectedDiary}
         onNewDiary={() => setShowNewModal(true)}
-        onExport={handleExport}
-        onImport={handleImport}
-        onLogout={logout}
-        currentUserPhone={currentUser?.phone || ''}
       />
 
       <SettingsPanel refreshDiaries={refreshDiaries} />
+      <AccountMenu
+        phone={currentUser?.phone || ''}
+        onLogout={logout}
+        onSwitchAccount={handleSwitchAccount}
+      />
 
       {/* Bottom controls */}
       {!sidebarOpen && (
@@ -251,10 +227,11 @@ export default function App() {
       />
 
       <DiaryCard
-        diary={selectedDiary}
+        diary={activeDiary}
         onClose={() => setSelectedDiary(null)}
         onDelete={deleteDiary}
         onToggleBookmark={toggleBookmark}
+        onUpdate={updateDiary}
       />
 
       {hasLegacyData && (

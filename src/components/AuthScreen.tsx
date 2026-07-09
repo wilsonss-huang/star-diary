@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -84,6 +84,13 @@ export default function AuthScreen() {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [quickLogin, setQuickLogin] = useState(!!rememberedPhone);
 
+  // When coming from "switch account", skip the warm welcome message
+  const [skipWelcome] = useState(() => {
+    const flag = sessionStorage.getItem('star-diary-skip-welcome');
+    if (flag) sessionStorage.removeItem('star-diary-skip-welcome');
+    return !!flag;
+  });
+
   const startCountdown = () => {
     setCountdown(60);
     if (timerRef.current) clearInterval(timerRef.current);
@@ -94,6 +101,11 @@ export default function AuthScreen() {
       });
     }, 1000);
   };
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []);
 
   const handleSendCode = async (phoneNumber?: string) => {
     setError('');
@@ -204,14 +216,14 @@ export default function AuthScreen() {
       {/* Login card */}
       <div className="absolute inset-0 flex items-center justify-center z-10">
         <motion.div
-          className="w-full max-w-[400px] mx-4"
+          className="w-full max-w-[360px] mx-4"
           initial={{ scale: 0.92, opacity: 0, y: 40 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           transition={{ type: 'spring', damping: 18, stiffness: 140, mass: 0.8 }}
         >
           {/* ── Liquid Glass card — deep refinement ── */}
           <div
-            className="rounded-[6px] px-10 py-10 min-h-[430px]
+            className="rounded-[8px] px-8 sm:px-10 py-8 min-h-[380px]
                        flex flex-col items-center
                        backdrop-blur-xl relative overflow-hidden"
             style={{
@@ -219,7 +231,8 @@ export default function AuthScreen() {
               boxShadow: [
                 '0 0 120px rgba(120,160,240,0.06)',
                 '0 0 60px rgba(100,140,220,0.04)',
-                '0 4px 24px rgba(0,0,0,0.05)',
+                '0 18px 80px rgba(0,0,0,0.18)',
+                '0 4px 24px rgba(0,0,0,0.08)',
                 'inset 0 1px 0 rgba(255,255,255,0.08)',
                 'inset 0 0 0 1px rgba(255,255,255,0.04)',
               ].join(', '),
@@ -228,7 +241,13 @@ export default function AuthScreen() {
             data-v12="2026-07-08-star-brand"
           >
             {/* ── Decorative: scattered star particles ── */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[6px]">
+            <div
+              className="absolute inset-x-8 top-0 h-px pointer-events-none"
+              style={{
+                background: 'linear-gradient(90deg, transparent, rgba(220,235,255,0.22), transparent)',
+              }}
+            />
+            <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[8px]">
               {[
                 { top: '8%', left: '14%', size: 2, delay: 0, dur: 3.2 },
                 { top: '18%', right: '10%', size: 1.5, delay: 1.1, dur: 3.8 },
@@ -253,11 +272,13 @@ export default function AuthScreen() {
               ))}
             </div>
 
+            <div className="relative z-10 flex flex-1 w-full flex-col items-center justify-center pb-2">
+
             {/* ── Header ── */}
-            <div className="text-center mb-4">
+            <div className="text-center mb-3">
               {/* Cross star with breathing glow */}
               <motion.div
-                className="inline-flex items-center justify-center mb-4 relative"
+                className="inline-flex items-center justify-center mb-2 relative"
                 animate={{ opacity: [0.7, 1, 0.7] }}
                 transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
               >
@@ -270,9 +291,9 @@ export default function AuthScreen() {
                   }}
                   transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
                   style={{
-                    width: 90, height: 90,
-                    background: 'radial-gradient(circle, rgba(160,200,255,0.5) 0%, transparent 70%)',
-                    filter: 'blur(25px)',
+                    width: 76, height: 76,
+                    background: 'radial-gradient(circle, rgba(160,200,255,0.42) 0%, transparent 70%)',
+                    filter: 'blur(22px)',
                   }}
                 />
                 {/* Mid glow ring */}
@@ -281,15 +302,15 @@ export default function AuthScreen() {
                   animate={{ opacity: [0.2, 0.4, 0.2] }}
                   transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
                   style={{
-                    width: 55, height: 55,
-                    background: 'radial-gradient(circle, rgba(200,220,255,0.4) 0%, transparent 60%)',
-                    filter: 'blur(10px)',
+                    width: 48, height: 48,
+                    background: 'radial-gradient(circle, rgba(200,220,255,0.36) 0%, transparent 60%)',
+                    filter: 'blur(9px)',
                   }}
                 />
 
                 {/* ── Cross star SVG — 4-pointed sparkle ── */}
                 <motion.svg
-                  width="36" height="36" viewBox="0 0 48 48" fill="none"
+                  width="34" height="34" viewBox="0 0 48 48" fill="none"
                   className="relative"
                   animate={{ scale: [0.95, 1.05, 0.95] }}
                   transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
@@ -315,7 +336,7 @@ export default function AuthScreen() {
               </motion.div>
 
               {/* Title with star decorations */}
-              <h1 className="text-white/90 text-[16px] font-light tracking-[0.3em] flex items-center justify-center gap-2.5">
+              <h1 className="text-white/90 text-[16px] font-light tracking-[0.28em] flex items-center justify-center gap-2.5">
                 <svg width="8" height="8" viewBox="0 0 10 10" className="opacity-30">
                   <path d="M5 0l1.2 3.8H10L6.8 6.2 8 10 5 7.8 2 10l1.2-3.8L0 3.8h3.8z" fill="rgba(200,215,255,0.8)"/>
                 </svg>
@@ -325,7 +346,7 @@ export default function AuthScreen() {
                 </svg>
               </h1>
               {/* Subtitle */}
-              <p className="text-[#b0c8e0]/55 text-[11px] mt-2 leading-relaxed tracking-[0.1em]">
+              <p className="text-[#b0c8e0]/55 text-[11px] mt-1 leading-relaxed tracking-[0.1em]">
                 每段回忆，化作夜空中的一颗星
               </p>
             </div>
@@ -349,25 +370,27 @@ export default function AuthScreen() {
 
             {/* ── Quick login (matching glass style) ── */}
             {quickLogin && rememberedPhone && !codeSent && (
-              <div className="flex-1 flex flex-col items-center justify-center gap-4">
-                <div className="text-center">
-                  <p className="text-white/50 text-[11px] tracking-wide">欢迎回来</p>
-                </div>
+              <div className="w-full flex flex-col items-center gap-3">
+                {!skipWelcome && (
+                  <div className="text-center">
+                    <p className="text-white/50 text-[12px] tracking-wide">欢迎回来</p>
+                  </div>
+                )}
 
                 {/* Masked phone display — same glass style as input */}
                 <div className="relative w-full max-w-[220px] mx-auto">
                   <div
-                    className="flex items-center rounded-[4px]"
+                    className="flex items-center rounded-[6px] border"
                     style={glassInputBase}
                   >
                     <span
-                      className="text-white/40 text-[11px] pl-2.5 pr-2 py-1 shrink-0 select-none font-light rounded-l-[4px]"
+                      className="text-white/40 text-[12px] pl-4 pr-3 py-2.5 shrink-0 select-none font-light rounded-l-[6px]"
                       style={{ background: 'rgba(255,255,255,0.015)' }}
                     >
                       +86
                     </span>
-                    <span className="w-px h-3 shrink-0" style={{ background: 'rgba(255,255,255,0.08)' }} />
-                    <span className="flex-1 text-white/75 text-[14px] font-light tracking-[0.15em] px-2 py-1">
+                    <span className="w-px h-5 shrink-0" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                    <span className="flex-1 text-white/75 text-[16px] font-light tracking-[0.15em] px-4 py-2.5">
                       {maskedPhone}
                     </span>
                   </div>
@@ -378,12 +401,12 @@ export default function AuthScreen() {
                 )}
 
                 {/* One-click login button — same glass style as get-code */}
-                <div className="pt-1 w-full max-w-[160px] mx-auto">
+                <div className="pt-1.5 w-full max-w-[220px] mx-auto">
                   <motion.button
                     type="button"
                     disabled={loading}
                     onClick={handleQuickLogin}
-                    className="relative w-full py-2 rounded-[4px] font-normal text-[12px]
+                    className="relative w-full py-3 rounded-[6px] font-normal text-[13px]
                                transition-all cursor-pointer overflow-hidden
                                disabled:opacity-30 disabled:cursor-not-allowed
                                text-white/85 tracking-[0.15em]"
@@ -397,10 +420,10 @@ export default function AuthScreen() {
                     } : {}}
                     whileTap={!loading ? { scale: 0.98 } : {}}
                   >
-                    <div className="absolute inset-0 rounded-[4px]" style={{
+                    <div className="absolute inset-0 rounded-[6px]" style={{
                       background: 'linear-gradient(135deg, rgba(110,140,225,0.2) 0%, rgba(140,170,245,0.16) 45%, rgba(165,195,255,0.2) 100%)',
                     }} />
-                    <div className="absolute inset-x-0 top-0 h-[55%] rounded-[4px]" style={{
+                    <div className="absolute inset-x-0 top-0 h-[55%] rounded-[6px]" style={{
                       background: 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.03) 40%, transparent 100%)',
                     }} />
                     <span className="relative z-10">{loading ? '登录中...' : '一键登录'}</span>
@@ -408,7 +431,7 @@ export default function AuthScreen() {
                 </div>
 
                 <button type="button" onClick={handleSwitchAccount}
-                  className="text-[#a0b8d8]/38 hover:text-[#c0d0e8]/55 text-[11px] transition-colors cursor-pointer text-center">
+                  className="text-[#a0b8d8]/38 hover:text-[#c0d0e8]/55 text-[12px] transition-colors cursor-pointer text-center mt-1">
                   切换账号
                 </button>
               </div>
@@ -417,17 +440,17 @@ export default function AuthScreen() {
             {/* ── Normal login: phone input ── */}
             {!codeSent && !quickLogin && (
               <form onSubmit={(e) => { e.preventDefault(); handleSendCode(); }}
-                className="flex-1 flex flex-col items-center justify-center gap-4"
+                className="w-full flex flex-col items-center gap-3"
               >
                 {/* Phone input */}
                 <div className="relative w-full max-w-[220px] mx-auto">
                   <div
-                    className="flex items-center rounded-[4px] transition-all duration-300"
+                    className="flex items-center rounded-[6px] border transition-all duration-300"
                     style={focusedField === 'phone' ? glassInputFocus : glassInputBase}
                   >
                     {/* +86 prefix — subtly separated */}
                     <span
-                      className="text-white/40 text-[11px] pl-2.5 pr-2 py-1 shrink-0 select-none font-light rounded-l-[4px]"
+                      className="text-white/40 text-[12px] pl-4 pr-3 py-2.5 shrink-0 select-none font-light rounded-l-[6px]"
                       style={{
                         background: focusedField === 'phone'
                           ? 'rgba(255,255,255,0.04)'
@@ -437,7 +460,7 @@ export default function AuthScreen() {
                       +86
                     </span>
                     {/* Subtle divider */}
-                    <span className="w-px h-3 shrink-0" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                    <span className="w-px h-5 shrink-0" style={{ background: 'rgba(255,255,255,0.08)' }} />
                     <input
                       type="tel"
                       value={phone}
@@ -445,8 +468,8 @@ export default function AuthScreen() {
                       onFocus={() => setFocusedField('phone')}
                       onBlur={() => setFocusedField(null)}
                       placeholder="输入手机号"
-                      className="flex-1 bg-transparent text-white/80 text-[12px] placeholder-white/20
-                                 outline-none px-2 py-1 font-light"
+                      className="flex-1 bg-transparent text-white/80 text-[14px] placeholder-white/20
+                                 outline-none px-4 py-2.5 font-light"
                       autoFocus
                     />
                   </div>
@@ -457,10 +480,10 @@ export default function AuthScreen() {
                 )}
 
                 {/* Get code button */}
-                <div className="pt-1 w-full max-w-[160px] mx-auto">
+                <div className="pt-2 w-full max-w-[220px] mx-auto">
                   <motion.button
                     type="submit" disabled={loading}
-                    className="relative w-full py-2 rounded-[4px] font-normal text-[12px]
+                    className="relative w-full py-3 rounded-[6px] font-normal text-[13px]
                                transition-all cursor-pointer overflow-hidden
                                disabled:opacity-30 disabled:cursor-not-allowed
                                text-white/85 tracking-[0.15em]"
@@ -474,10 +497,10 @@ export default function AuthScreen() {
                     } : {}}
                     whileTap={!loading ? { scale: 0.98 } : {}}
                   >
-                    <div className="absolute inset-0 rounded-[4px]" style={{
+                    <div className="absolute inset-0 rounded-[6px]" style={{
                       background: 'linear-gradient(135deg, rgba(110,140,225,0.2) 0%, rgba(140,170,245,0.16) 45%, rgba(165,195,255,0.2) 100%)',
                     }} />
-                    <div className="absolute inset-x-0 top-0 h-[55%] rounded-[4px]" style={{
+                    <div className="absolute inset-x-0 top-0 h-[55%] rounded-[6px]" style={{
                       background: 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.03) 40%, transparent 100%)',
                     }} />
                     <span className="relative z-10">{loading ? '发送中...' : '获取验证码'}</span>
@@ -486,7 +509,7 @@ export default function AuthScreen() {
 
                 {rememberedPhone && (
                   <button type="button" onClick={() => { resetForm(); setQuickLogin(true); }}
-                    className="text-[#a0b8d8]/38 hover:text-[#c0d0e8]/55 text-[11px] transition-colors cursor-pointer text-center">
+                    className="text-[#a0b8d8]/38 hover:text-[#c0d0e8]/55 text-[12px] transition-colors cursor-pointer text-center mt-1">
                     ← 返回快速登录
                   </button>
                 )}
@@ -495,18 +518,15 @@ export default function AuthScreen() {
 
             {/* ── Code verification ── */}
             {codeSent && (
-              <form onSubmit={handleVerify} className="flex-1 flex flex-col items-center gap-4">
-                {/* Top spacer — pushes content down to center */}
-                <div className="flex-1" />
-
-                <p className="text-[#b0c8e0]/50 text-[11px] text-center leading-relaxed tracking-wide mb-1">
+              <form onSubmit={handleVerify} className="w-full flex flex-col items-center gap-3">
+                <p className="text-[#b0c8e0]/50 text-[12px] text-center leading-relaxed tracking-wide mb-1">
                   验证码已发送至 <span className="text-[#c8d8f0]/65">+86 {phone || rememberedPhone}</span>
                 </p>
 
                 {/* Code input */}
                 <div className="relative w-full max-w-[220px] mx-auto mt-1">
                   <div
-                    className="rounded-[4px] transition-all duration-300"
+                    className="rounded-[6px] border transition-all duration-300"
                     style={focusedField === 'code' ? glassInputFocus : glassInputBase}
                   >
                     <input
@@ -515,8 +535,8 @@ export default function AuthScreen() {
                       onFocus={() => setFocusedField('code')}
                       onBlur={() => setFocusedField(null)}
                       placeholder="输入 6 位验证码"
-                      className="w-full bg-transparent text-white/80 text-center text-base font-light
-                                 tracking-[0.5em] placeholder-white/20 outline-none py-2.5"
+                      className="w-full bg-transparent text-white/80 text-center text-[18px] font-light
+                                 tracking-[0.45em] placeholder-white/20 outline-none py-3"
                       autoFocus
                     />
                   </div>
@@ -527,10 +547,10 @@ export default function AuthScreen() {
                 )}
 
                 {/* Login button */}
-                <div className="pt-4 w-full max-w-[160px] mx-auto">
+                <div className="pt-3 w-full max-w-[220px] mx-auto">
                   <motion.button
                     type="submit" disabled={loading}
-                    className="relative w-full py-2 rounded-[4px] font-normal text-[12px]
+                    className="relative w-full py-3 rounded-[6px] font-normal text-[13px]
                                transition-all cursor-pointer overflow-hidden
                                disabled:opacity-30 disabled:cursor-not-allowed
                                text-white/85 tracking-[0.15em]"
@@ -544,10 +564,10 @@ export default function AuthScreen() {
                     } : {}}
                     whileTap={!loading ? { scale: 0.98 } : {}}
                   >
-                    <div className="absolute inset-0 rounded-[4px]" style={{
+                    <div className="absolute inset-0 rounded-[6px]" style={{
                       background: 'linear-gradient(135deg, rgba(110,140,225,0.2) 0%, rgba(140,170,245,0.16) 45%, rgba(165,195,255,0.2) 100%)',
                     }} />
-                    <div className="absolute inset-x-0 top-0 h-[55%] rounded-[4px]" style={{
+                    <div className="absolute inset-x-0 top-0 h-[55%] rounded-[6px]" style={{
                       background: 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.03) 40%, transparent 100%)',
                     }} />
                     <span className="relative z-10">{loading ? '验证中...' : '登 录'}</span>
@@ -555,7 +575,7 @@ export default function AuthScreen() {
                 </div>
 
                 {/* Footer links */}
-                <div className="flex gap-5 text-[11px] justify-center pt-3">
+                <div className="flex gap-5 text-[12px] justify-center pt-2">
                   <button type="button" onClick={() => handleSendCode(phone)}
                     disabled={countdown > 0 || loading}
                     className="text-[#a0b8d8]/40 hover:text-[#c0d0e8]/58 transition-colors cursor-pointer
@@ -568,11 +588,10 @@ export default function AuthScreen() {
                     更换手机号
                   </button>
                 </div>
-
-                {/* Bottom spacer — balances top spacer to center content */}
-                <div className="flex-1" />
               </form>
             )}
+
+            </div>
 
             {/* ── Bottom constellation accent (absolute, doesn't affect centering) ── */}
             <div className="absolute bottom-4 left-0 right-0 flex justify-center pointer-events-none">

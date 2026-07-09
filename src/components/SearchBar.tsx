@@ -1,11 +1,12 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CalendarDays, Search, X } from 'lucide-react';
 import type { DiaryEntry } from '../types';
 import { EMOTION_MAP } from '../types';
-import { CalendarIcon } from './Icons';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
+  onHighlightIds?: (ids: string[]) => void;
   results: DiaryEntry[];
   onResultClick: (diary: DiaryEntry) => void;
   totalCount: number;
@@ -31,9 +32,10 @@ function getAvailableDates(diaries: DiaryEntry[]) {
   return { years, months, days };
 }
 
-export default function SearchBar({ onSearch, results, onResultClick, totalCount, diaries, onDiaryClick }: SearchBarProps) {
+export default function SearchBar({ onSearch, onHighlightIds, results, onResultClick, totalCount, diaries, onDiaryClick }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [dateFilter, setDateFilter] = useState({ year: 0, month: 0, day: 0 });
 
@@ -66,7 +68,9 @@ export default function SearchBar({ onSearch, results, onResultClick, totalCount
   }, [diaries, dateFilter]);
 
   const displayResults = query.trim() ? results : dateFilteredDiaries;
-  const showDropdown = isFocused && (query.trim() || dateFilter.year > 0);
+  const hasDateFilter = dateFilter.year > 0;
+  const showDropdown = isFocused && (query.trim() || hasDateFilter);
+  const isVisible = isHovering || isFocused || showDateFilter || query.trim().length > 0 || hasDateFilter;
 
   const years = Array.from(availableDates.years).sort((a, b) => b - a);
   const months = dateFilter.year ? Array.from(availableDates.months.get(dateFilter.year) || []).sort((a, b) => a - b) : [];
@@ -78,168 +82,191 @@ export default function SearchBar({ onSearch, results, onResultClick, totalCount
   const setMonth = (m: number) => setDateFilter(p => ({ ...p, month: m, day: 0 }));
   const setDay = (d: number) => setDateFilter(p => ({ ...p, day: d }));
 
+  useEffect(() => {
+    if (!onHighlightIds || query.trim()) return;
+    onHighlightIds(hasDateFilter ? dateFilteredDiaries.map((diary) => diary.id) : []);
+  }, [dateFilteredDiaries, hasDateFilter, onHighlightIds, query]);
+
   return (
-    <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 w-full max-w-xl px-4">
+    <>
+      <div
+        className="absolute left-0 right-0 top-0 z-20 h-12"
+        onMouseEnter={() => setIsHovering(true)}
+        aria-hidden="true"
+      />
+
       <motion.div
-        className="glass rounded-3xl overflow-hidden"
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.3 }}
+        className="absolute left-1/2 top-5 z-20 w-full max-w-3xl -translate-x-1/2 px-6"
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+        initial={{ y: -92, opacity: 0 }}
+        animate={{ y: isVisible ? 0 : -92, opacity: isVisible ? 1 : 0 }}
+        transition={{ type: 'spring', damping: 26, stiffness: 260 }}
+        style={{ pointerEvents: isVisible ? 'auto' : 'none' }}
       >
-        {/* Search row */}
-        <div className="flex items-center px-6 py-4 gap-3">
-          <svg className="w-4 h-4 text-white/20 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            value={query}
-            onChange={handleChange}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setTimeout(() => setIsFocused(false), 250)}
-            placeholder={`搜索 ${totalCount} 颗星星...`}
-            className="flex-1 bg-transparent text-white text-sm placeholder-white/20 outline-none"
-            data-search-input
-          />
-          <span className="text-white/10 text-[10px] border border-white/8 rounded-md px-1.5 py-0.5 shrink-0 hidden sm:block">
-            Ctrl+K
-          </span>
+        <div
+          className="overflow-hidden rounded-[30px] border border-white/[0.025] bg-black/68 backdrop-blur-3xl"
+          style={{
+            boxShadow: '0 22px 80px rgba(0,0,0,0.55), 0 0 34px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.06)',
+          }}
+        >
+          <div className="flex min-h-[66px] items-center gap-4 px-6 py-3.5">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/[0.035] text-white/48 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+              <Search size={19} strokeWidth={1.7} />
+            </span>
+            <input
+              type="text"
+              value={query}
+              onChange={handleChange}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setTimeout(() => setIsFocused(false), 250)}
+              placeholder={`搜索 ${totalCount} 颗星星...`}
+              className="min-w-0 flex-1 bg-transparent text-[15px] leading-6 text-white/90 outline-none
+                         placeholder:text-white/28"
+              data-search-input
+            />
+            <span className="hidden shrink-0 rounded-lg bg-white/[0.025] px-2.5 py-1.5 text-[11px] text-white/20 sm:block">
+              Ctrl+K
+            </span>
 
-          <button
-            type="button"
-            onClick={() => setShowDateFilter(!showDateFilter)}
-            className={`transition-all cursor-pointer shrink-0 ${dateFilter.year > 0 ? 'text-indigo-400/80' : 'text-white/20 hover:text-white/40'}`}
-            title="按日期筛选"
-          >
-            <CalendarIcon size={16} />
-          </button>
-
-          {query && (
             <button
               type="button"
-              onClick={handleClear}
-              className="text-white/20 hover:text-white/50 transition-colors cursor-pointer shrink-0"
+              onClick={() => setShowDateFilter(!showDateFilter)}
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-all ${
+                hasDateFilter || showDateFilter
+                  ? 'bg-indigo-300/[0.14] text-indigo-100/85 shadow-[0_0_22px_rgba(165,180,252,0.14)]'
+                  : 'bg-white/[0.032] text-white/35 hover:bg-white/[0.07] hover:text-white/68'
+              }`}
+              title="按日期筛选"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" d="M18 6L6 18M6 6l12 12" />
-              </svg>
+              <CalendarDays size={18} strokeWidth={1.6} />
             </button>
-          )}
-        </div>
 
-        {/* Date filter panel */}
-        <AnimatePresence>
-          {showDateFilter && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="border-t border-white/[0.04] overflow-hidden"
-            >
-              <div className="px-6 py-4 flex gap-3 items-center">
-                <select
-                  value={dateFilter.year || ''}
-                  onChange={e => setYear(Number(e.target.value))}
-                  className="bg-white/[0.03] border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-white/50 text-xs outline-none cursor-pointer"
-                >
-                  <option value="">年份</option>
-                  {years.map(y => <option key={y} value={y}>{y}</option>)}
-                </select>
+            {query && (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl
+                           bg-white/[0.032] text-white/32 transition-all hover:bg-white/[0.07] hover:text-white/70"
+                title="清除搜索"
+              >
+                <X size={17} strokeWidth={1.7} />
+              </button>
+            )}
+          </div>
 
-                {dateFilter.year > 0 && (
+          <AnimatePresence>
+            {showDateFilter && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden border-t border-white/[0.025]"
+              >
+                <div className="flex flex-wrap items-center gap-3 px-6 py-4">
                   <select
-                    value={dateFilter.month || ''}
-                    onChange={e => setMonth(Number(e.target.value))}
-                    className="bg-white/[0.03] border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-white/50 text-xs outline-none cursor-pointer"
+                    value={dateFilter.year || ''}
+                    onChange={e => setYear(Number(e.target.value))}
+                    className="min-h-11 rounded-2xl border border-transparent bg-white/[0.045] px-4 text-sm text-white/62 outline-none"
                   >
-                    <option value="">月份</option>
-                    {months.map(m => <option key={m} value={m}>{m}月</option>)}
+                    <option value="">年份</option>
+                    {years.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
-                )}
 
-                {dateFilter.month > 0 && (
-                  <select
-                    value={dateFilter.day || ''}
-                    onChange={e => setDay(Number(e.target.value))}
-                    className="bg-white/[0.03] border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-white/50 text-xs outline-none cursor-pointer"
-                  >
-                    <option value="">日期</option>
-                    {days.map(d => <option key={d} value={d}>{d}日</option>)}
-                  </select>
-                )}
+                  {dateFilter.year > 0 && (
+                    <select
+                      value={dateFilter.month || ''}
+                      onChange={e => setMonth(Number(e.target.value))}
+                      className="min-h-11 rounded-2xl border border-transparent bg-white/[0.045] px-4 text-sm text-white/62 outline-none"
+                    >
+                      <option value="">月份</option>
+                      {months.map(m => <option key={m} value={m}>{m}月</option>)}
+                    </select>
+                  )}
 
-                {dateFilter.year > 0 && (
-                  <button
-                    type="button"
-                    onClick={clearDateFilter}
-                    className="text-white/20 hover:text-white/50 text-xs cursor-pointer ml-auto transition-colors"
-                  >
-                    清除筛选
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                  {dateFilter.month > 0 && (
+                    <select
+                      value={dateFilter.day || ''}
+                      onChange={e => setDay(Number(e.target.value))}
+                      className="min-h-11 rounded-2xl border border-transparent bg-white/[0.045] px-4 text-sm text-white/62 outline-none"
+                    >
+                      <option value="">日期</option>
+                      {days.map(d => <option key={d} value={d}>{d}日</option>)}
+                    </select>
+                  )}
 
-        {/* Results dropdown */}
-        <AnimatePresence>
-          {showDropdown && displayResults.length > 0 && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="border-t border-white/[0.04] overflow-hidden"
-            >
-              <div className="max-h-60 overflow-y-auto">
-                {displayResults.map((diary, i) => (
-                  <motion.button
-                    key={diary.id}
-                    type="button"
-                    onClick={() => {
-                      (query.trim() ? onResultClick : onDiaryClick)(diary);
-                      setIsFocused(false);
-                    }}
-                    className="w-full flex items-center gap-4 px-6 py-3.5 hover:bg-white/[0.04]
-                               transition-colors text-left cursor-pointer"
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.03 }}
-                  >
-                    <span className="text-xl shrink-0">{EMOTION_MAP[diary.emotion].emoji}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-white/85 text-sm truncate">{diary.title}</div>
-                      <div className="text-white/20 text-xs mt-0.5">
-                        {diary.date} · {diary.content.slice(0, 30)}
+                  {hasDateFilter && (
+                    <button
+                      type="button"
+                      onClick={clearDateFilter}
+                      className="ml-auto min-h-11 rounded-2xl px-4 text-xs text-white/30 transition-colors hover:text-white/62"
+                    >
+                      清除筛选
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {showDropdown && displayResults.length > 0 && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden border-t border-white/[0.025]"
+              >
+                <div className="max-h-72 overflow-y-auto py-2">
+                  {displayResults.map((diary, i) => (
+                    <motion.button
+                      key={diary.id}
+                      type="button"
+                      onClick={() => {
+                        (query.trim() ? onResultClick : onDiaryClick)(diary);
+                        setIsFocused(false);
+                        setIsHovering(false);
+                      }}
+                      className="flex w-full items-center gap-4 px-6 py-4 text-left transition-colors
+                                 hover:bg-white/[0.045]"
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.03 }}
+                    >
+                      <span
+                        className="h-3.5 w-3.5 shrink-0 rounded-full border border-white/25 shadow-[0_0_14px_currentColor]"
+                        style={{ color: EMOTION_MAP[diary.emotion].color, backgroundColor: EMOTION_MAP[diary.emotion].color }}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm text-white/86">{diary.title}</div>
+                        <div className="mt-1 truncate text-xs text-white/24">
+                          {diary.date} · {diary.content.slice(0, 36)}
+                        </div>
                       </div>
-                    </div>
-                    <div
-                      className="w-1.5 h-1.5 rounded-full shrink-0 opacity-40"
-                      style={{ backgroundColor: EMOTION_MAP[diary.emotion].color }}
-                    />
-                  </motion.button>
-                ))}
-              </div>
-              <div className="px-6 py-3 text-white/12 text-xs text-center border-t border-white/[0.04]">
-                找到 {displayResults.length} 颗星星
-              </div>
-            </motion.div>
-          )}
+                    </motion.button>
+                  ))}
+                </div>
+                <div className="border-t border-white/[0.025] px-6 py-3 text-center text-xs text-white/16">
+                  找到 {displayResults.length} 颗星星
+                </div>
+              </motion.div>
+            )}
 
-          {showDropdown && displayResults.length === 0 && (query.trim() !== '' || dateFilter.year > 0) && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="border-t border-white/[0.04] overflow-hidden"
-            >
-              <div className="px-6 py-5 text-white/20 text-sm text-center">
-                没有找到匹配的星星
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            {showDropdown && displayResults.length === 0 && (query.trim() !== '' || hasDateFilter) && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden border-t border-white/[0.025]"
+              >
+                <div className="px-6 py-6 text-center text-sm text-white/24">
+                  没有找到匹配的星星
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </motion.div>
-    </div>
+    </>
   );
 }

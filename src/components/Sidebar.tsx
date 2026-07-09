@@ -1,238 +1,238 @@
+import { useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { BookOpenText, ChevronLeft, Menu, Orbit, PenLine, Sparkles } from 'lucide-react';
 import type { DiaryEntry, Emotion } from '../types';
 import { EMOTION_MAP } from '../types';
-import { StarLogo, StarFilled, StarOutline, SparkleIcon } from './Icons';
+import { StarLogo, StarFilled, StarOutline } from './Icons';
 
 interface SidebarProps {
   isOpen: boolean;
+  onOpen: () => void;
+  onClose: () => void;
   onToggle: () => void;
   diaries: DiaryEntry[];
   bookmarkedDiaries: DiaryEntry[];
   emotionStats: Record<Emotion, number>;
-  starStyle: 'realistic' | 'dark';
-  onStarStyleChange: (style: 'realistic' | 'dark') => void;
   onDiaryClick: (diary: DiaryEntry) => void;
   onNewDiary: () => void;
-  onExport: () => void;
-  onImport: () => void;
-  onLogout: () => void;
-  currentUserPhone: string;
 }
 
 function formatDateShort(iso: string): string {
   return new Date(iso).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
 }
 
+function EmotionGlow({ emotion, size = 14 }: { emotion: Emotion; size?: number }) {
+  const color = EMOTION_MAP[emotion].color;
+
+  return (
+    <span
+      className="relative inline-flex shrink-0 items-center justify-center rounded-full"
+      style={{ width: size, height: size }}
+      title={EMOTION_MAP[emotion].label}
+    >
+      <span className="absolute inset-0 rounded-full blur-[5px] opacity-60" style={{ backgroundColor: color }} />
+      <span
+        className="relative block rounded-full border border-white/25"
+        style={{
+          width: Math.max(7, size - 6),
+          height: Math.max(7, size - 6),
+          background: `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), ${color} 38%, rgba(6,8,22,0.8) 100%)`,
+        }}
+      />
+    </span>
+  );
+}
+
 export default function Sidebar({
-  isOpen, onToggle, diaries, bookmarkedDiaries, emotionStats, starStyle, onStarStyleChange,
-  onDiaryClick, onNewDiary, onExport, onImport, onLogout, currentUserPhone,
+  isOpen,
+  onOpen,
+  onClose,
+  onToggle,
+  diaries,
+  bookmarkedDiaries,
+  emotionStats,
+  onDiaryClick,
+  onNewDiary,
 }: SidebarProps) {
+  const closeTimerRef = useRef<number | null>(null);
+
+  const clearCloseTimer = useCallback(() => {
+    if (closeTimerRef.current === null) return;
+    window.clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = null;
+  }, []);
+
+  const handleOpen = useCallback(() => {
+    clearCloseTimer();
+    onOpen();
+  }, [clearCloseTimer, onOpen]);
+
+  const handleDelayedClose = useCallback(() => {
+    clearCloseTimer();
+    closeTimerRef.current = window.setTimeout(() => {
+      onClose();
+      closeTimerRef.current = null;
+    }, 220);
+  }, [clearCloseTimer, onClose]);
+
+  const handleImmediateClose = useCallback(() => {
+    clearCloseTimer();
+    onClose();
+  }, [clearCloseTimer, onClose]);
+
+  useEffect(() => clearCloseTimer, [clearCloseTimer]);
+
   const handleDiaryClick = (diary: DiaryEntry) => {
     onDiaryClick(diary);
-    onToggle();
+    handleImmediateClose();
   };
 
   return (
     <>
-      {/* Toggle button */}
-      <motion.button
-        type="button"
-        className="absolute top-5 left-5 z-10 flex items-center gap-2.5 px-4 py-2.5 rounded-xl glass
-                   cursor-pointer hover:bg-white/10 active:scale-95 group"
-        onClick={onToggle}
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{
-          opacity: 1,
-          scale: 1,
-          x: isOpen ? 336 : 0,
-          boxShadow: ['0 0 0px rgba(99,102,241,0)', '0 0 12px rgba(99,102,241,0.3)', '0 0 0px rgba(99,102,241,0)'],
-        }}
-        transition={{
-          x: { type: 'spring', damping: 22, stiffness: 200 },
-          boxShadow: { repeat: 3, duration: 2 },
-        }}
-      >
-        <svg className="w-5 h-5 text-white/60 group-hover:text-white/80 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-        <span className="text-white/50 text-xs group-hover:text-white/70 transition-colors hidden sm:inline">
-          菜单
-        </span>
-      </motion.button>
+      <div className="absolute left-0 top-0 bottom-0 z-30 w-10" onMouseEnter={handleOpen} aria-hidden="true" />
 
-      {/* Sidebar panel */}
+      <AnimatePresence>
+        {!isOpen && (
+          <motion.button
+            type="button"
+            className="absolute left-4 top-5 z-[31] flex h-11 items-center gap-2 rounded-2xl
+                       bg-black/42 px-3 text-white/55
+                       shadow-[0_18px_48px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-2xl
+                       transition-all hover:bg-white/[0.07] hover:text-white/82 active:scale-95"
+            onMouseEnter={handleOpen}
+            onClick={onToggle}
+            initial={{ opacity: 0, x: -16, scale: 0.96 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: -16, scale: 0.96 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            title="菜单"
+          >
+            <Menu size={19} strokeWidth={1.6} />
+            <span className="hidden text-xs font-medium sm:inline">菜单</span>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            className="absolute left-0 top-0 bottom-0 w-80 z-20 glass-strong
-                       border-r border-white/[0.06] flex flex-col"
-            initial={{ x: -336 }}
-            animate={{ x: 0 }}
-            exit={{ x: -336 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+          <motion.aside
+            className="absolute left-0 top-0 bottom-0 z-30 flex w-[360px] max-w-[86vw] flex-col
+                       border-r border-white/[0.025] bg-black/62 shadow-[24px_0_90px_rgba(0,0,0,0.56)]
+                       backdrop-blur-3xl"
+            onMouseEnter={handleOpen}
+            onMouseLeave={handleDelayedClose}
+            initial={{ x: -380, opacity: 0.9 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -380, opacity: 0.9 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 240 }}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-7 py-7 border-b border-white/[0.04]">
-              <div className="flex items-center gap-3">
-                <span className="text-white/55">
-                  <StarLogo size={24} />
+            <div className="flex items-center justify-between border-b border-white/[0.025] px-7 py-7">
+              <div className="flex min-w-0 items-center gap-4">
+                <span
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
+                  style={{
+                    background: 'radial-gradient(circle at 35% 25%, rgba(255,255,255,0.22), rgba(129,140,248,0.16) 42%, rgba(9,12,32,0.8) 100%)',
+                    boxShadow: '0 16px 42px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.10)',
+                  }}
+                >
+                  <StarLogo size={23} className="text-white/78" />
                 </span>
-                <span className="text-white font-semibold text-base tracking-wide">星空日记</span>
+                <div className="min-w-0">
+                  <div className="truncate text-[15px] font-semibold tracking-wide text-white/92">星空日记</div>
+                  <div className="mt-1 flex items-center gap-1.5 text-[11px] text-white/28">
+                    <Orbit size={12} strokeWidth={1.5} />
+                    <span>{diaries.length} 颗星星</span>
+                  </div>
+                </div>
               </div>
               <button
                 type="button"
-                onClick={onToggle}
-                className="w-8 h-8 rounded-lg flex items-center justify-center
-                           text-white/20 hover:text-white/55 hover:bg-white/5 transition-all cursor-pointer"
+                onClick={handleImmediateClose}
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-white/28
+                           transition-all hover:bg-white/[0.06] hover:text-white/70"
+                title="收起"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" d="M18 6L6 18M6 6l12 12" />
-                </svg>
+                <ChevronLeft size={18} strokeWidth={1.6} />
               </button>
             </div>
 
-            {/* New diary button */}
-            <div className="px-6 py-6 border-b border-white/[0.04]">
+            <div className="px-7 py-6">
               <button
                 type="button"
                 onClick={onNewDiary}
-                className="w-full py-4 rounded-xl font-medium transition-all cursor-pointer
-                           bg-indigo-500/10 border border-indigo-500/20 text-white/90
-                           hover:bg-indigo-500/20 hover:border-indigo-500/35
-                           active:scale-[0.98] flex items-center justify-center gap-2.5 text-sm"
+                className="flex w-full items-center justify-center gap-3 rounded-2xl
+                           bg-indigo-400/[0.10] px-5 py-4 text-sm font-medium text-white/92
+                           shadow-[0_16px_44px_rgba(24,26,60,0.28)] transition-all
+                           hover:bg-indigo-300/[0.16] active:scale-[0.98]"
               >
-                <span className="text-white/65">
-                  <SparkleIcon size={16} />
-                </span>
+                <PenLine size={18} strokeWidth={1.7} />
                 <span>写日记 · 点亮星星</span>
               </button>
             </div>
 
-            {/* Star style toggle */}
-            <div className="px-6 py-5 border-b border-white/[0.04] flex items-center justify-between">
-              <span className="text-white/35 text-xs">星空风格</span>
-              <div className="flex gap-1 bg-white/[0.03] rounded-lg p-0.5">
-                {(['realistic', 'dark'] as const).map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => onStarStyleChange(s)}
-                    className={`px-3.5 py-1.5 rounded-md text-xs transition-all cursor-pointer ${
-                      starStyle === s ? 'bg-white/10 text-white/90' : 'text-white/30 hover:text-white/55'
-                    }`}
-                  >
-                    {s === 'realistic' ? '天文' : '暗夜'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Bookmarked stars */}
-            <div className="px-6 py-6 flex-1 overflow-hidden flex flex-col">
-              <h3 className="text-white/35 text-xs font-medium mb-4 flex items-center gap-2">
-                <span className="text-white/45">
-                  <StarFilled size={12} />
-                </span>
-                <span>收藏星</span>
-                <span className="text-white/15">({bookmarkedDiaries.length})</span>
+            <div className="flex min-h-0 flex-1 flex-col px-7 py-4">
+              <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-white/38">
+                <StarFilled size={13} />
+                <span>收藏星星</span>
+                <span className="text-white/18">({bookmarkedDiaries.length})</span>
               </h3>
 
               {bookmarkedDiaries.length === 0 ? (
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="text-center px-6">
-                    <div className="mb-4 text-white/10">
-                      <StarOutline size={32} />
+                <div className="flex flex-1 items-center justify-center">
+                  <div className="px-8 text-center">
+                    <div className="mb-4 flex justify-center text-white/12">
+                      <StarOutline size={34} />
                     </div>
-                    <p className="text-white/18 text-xs leading-relaxed">还没有收藏的星星</p>
-                    <p className="text-white/10 text-xs mt-2 leading-relaxed">点击日记卡片中的星标收藏</p>
+                    <p className="text-xs leading-relaxed text-white/22">还没有收藏的星星</p>
+                    <p className="mt-2 text-xs leading-relaxed text-white/12">打开日记卡片后可以把重要回忆收藏起来</p>
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 overflow-y-auto space-y-1">
-                  {bookmarkedDiaries.map((d) => (
+                <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+                  {bookmarkedDiaries.map((diary) => (
                     <button
-                      key={d.id}
+                      key={diary.id}
                       type="button"
-                      onClick={() => handleDiaryClick(d)}
-                      className="w-full flex items-center gap-3.5 px-3.5 py-3 rounded-lg
-                                 hover:bg-white/[0.04] transition-colors text-left cursor-pointer group"
+                      onClick={() => handleDiaryClick(diary)}
+                      className="group flex w-full items-center gap-4 rounded-2xl px-4 py-3.5 text-left
+                                 transition-all hover:bg-white/[0.055]"
                     >
-                      <span className="text-base shrink-0">{EMOTION_MAP[d.emotion].emoji}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-white/80 text-sm truncate group-hover:text-white">
-                          {d.title}
+                      <EmotionGlow emotion={diary.emotion} size={17} />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm text-white/82 transition-colors group-hover:text-white">
+                          {diary.title}
                         </div>
-                        <div className="text-white/18 text-xs mt-0.5">{formatDateShort(d.createdAt)}</div>
+                        <div className="mt-1 flex items-center gap-1.5 text-xs text-white/24">
+                          <BookOpenText size={12} strokeWidth={1.5} />
+                          <span>{formatDateShort(diary.createdAt)}</span>
+                        </div>
                       </div>
-                      <div
-                        className="w-1.5 h-1.5 rounded-full shrink-0 opacity-50"
-                        style={{ backgroundColor: EMOTION_MAP[d.emotion].color }}
-                      />
                     </button>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Emotion stats */}
-            <div className="px-6 py-5 border-t border-white/[0.04]">
-              <div className="flex gap-4 justify-center">
+            <div className="border-t border-white/[0.025] px-7 py-6">
+              <div className="mb-4 flex items-center gap-2 text-xs text-white/35">
+                <Sparkles size={14} strokeWidth={1.5} />
+                <span>情绪星谱</span>
+              </div>
+              <div className="grid grid-cols-6 gap-3">
                 {(Object.entries(emotionStats) as [Emotion, number][]).map(([key, count]) => (
-                  <div key={key} className="flex flex-col items-center gap-1.5" title={`${EMOTION_MAP[key].label}: ${count}`}>
-                    <span className="text-sm opacity-55">{EMOTION_MAP[key].emoji}</span>
-                    <span className="text-white/18 text-[10px]">{count}</span>
+                  <div
+                    key={key}
+                    className="flex min-w-0 flex-col items-center gap-2 rounded-xl
+                               bg-white/[0.025] px-2 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]"
+                    title={`${EMOTION_MAP[key].label}: ${count}`}
+                  >
+                    <EmotionGlow emotion={key} size={16} />
+                    <span className="text-[11px] text-white/28">{count}</span>
                   </div>
                 ))}
               </div>
-              <div className="text-center text-white/10 text-[10px] mt-3">
-                {diaries.length} 颗星星
-              </div>
             </div>
-
-            {/* Bottom actions */}
-            <div className="px-6 py-6 border-t border-white/[0.04] space-y-3">
-              <button
-                type="button"
-                onClick={onExport}
-                className="w-full py-3.5 rounded-xl border border-white/[0.06] text-white/45
-                           hover:bg-white/[0.04] hover:text-white/70 hover:border-white/15
-                           transition-all cursor-pointer text-xs flex items-center justify-center gap-2"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                导出备份
-              </button>
-              <button
-                type="button"
-                onClick={onImport}
-                className="w-full py-3.5 rounded-xl border border-white/[0.06] text-white/45
-                           hover:bg-white/[0.04] hover:text-white/70 hover:border-white/15
-                           transition-all cursor-pointer text-xs flex items-center justify-center gap-2"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="17 8 12 3 7 8" />
-                  <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
-                导入恢复
-              </button>
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-white/18 text-[10px] truncate max-w-[150px]">
-                  {currentUserPhone}
-                </span>
-                <button
-                  type="button"
-                  onClick={onLogout}
-                  className="text-white/20 hover:text-red-400/55 transition-colors cursor-pointer text-[10px]"
-                >
-                  注销
-                </button>
-              </div>
-            </div>
-          </motion.div>
+          </motion.aside>
         )}
       </AnimatePresence>
     </>

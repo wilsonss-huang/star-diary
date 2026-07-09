@@ -1,10 +1,8 @@
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { pickSpectralType } from './SpectralTypes';
 import { getStarBodyTexture } from './StarTexture';
 
-// Shared circle texture — ALL background stars use this
 let circleTexture: THREE.CanvasTexture | null = null;
 function getCircleTexture(): THREE.CanvasTexture {
   if (circleTexture) return circleTexture;
@@ -15,9 +13,8 @@ function getCircleTexture(): THREE.CanvasTexture {
   const ctx = canvas.getContext('2d')!;
   const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
   grad.addColorStop(0, 'rgba(255,255,255,1)');
-  grad.addColorStop(0.15, 'rgba(255,255,255,0.9)');
-  grad.addColorStop(0.4, 'rgba(255,255,255,0.3)');
-  grad.addColorStop(0.7, 'rgba(255,255,255,0.04)');
+  grad.addColorStop(0.18, 'rgba(245,250,255,0.92)');
+  grad.addColorStop(0.48, 'rgba(180,215,255,0.20)');
   grad.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, size, size);
@@ -28,15 +25,14 @@ function getCircleTexture(): THREE.CanvasTexture {
 
 interface StarLayerProps {
   count: number;
-  innerRadius: number;
-  outerRadius: number;
   size: number;
   baseOpacity: number;
-  animate?: 'none' | 'collective' | 'individual';
+  shape: 'galaxy' | 'field' | 'near';
+  speed: number;
   useSpikeTex?: boolean;
 }
 
-function StarLayer({ count, innerRadius, outerRadius, size, baseOpacity, animate, useSpikeTex }: StarLayerProps) {
+function StarLayer({ count, size, baseOpacity, shape, speed, useSpikeTex }: StarLayerProps) {
   const ref = useRef<THREE.Points>(null);
   const tex = useMemo(() => useSpikeTex ? getStarBodyTexture() : getCircleTexture(), [useSpikeTex]);
 
@@ -45,25 +41,47 @@ function StarLayer({ count, innerRadius, outerRadius, size, baseOpacity, animate
     const col = new Float32Array(count * 3);
 
     for (let i = 0; i < count; i++) {
-      const phi = Math.acos(1 - 2 * (i + 0.5) / count) * 0.65;
-      const theta = Math.PI * (1 + Math.sqrt(5)) * i;
-      const r = innerRadius + Math.random() * (outerRadius - innerRadius);
+      let x = 0;
+      let y = 0;
+      let z = 0;
 
-      pos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-      pos[i * 3 + 1] = r * Math.cos(phi) + 1.5;
-      pos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+      if (shape === 'galaxy') {
+        const arm = i % 4;
+        const t = Math.random() * Math.PI * 7.2;
+        const radius = 2.5 + Math.pow(Math.random(), 0.72) * 38;
+        const angle = t + arm * Math.PI * 0.5 + radius * 0.038;
+        const spread = 0.22 + radius * 0.03;
+        x = Math.cos(angle) * radius + (Math.random() - 0.5) * spread * 4.5;
+        z = Math.sin(angle) * radius * 0.42 + (Math.random() - 0.5) * spread * 3.2;
+        y = Math.sin(t * 0.68) * 1.6 + (Math.random() - 0.5) * (0.7 + radius * 0.025);
+      } else if (shape === 'near') {
+        const theta = Math.random() * Math.PI * 2;
+        const r = 12 + Math.random() * 30;
+        x = Math.cos(theta) * r;
+        z = Math.sin(theta) * r;
+        y = -8 + Math.random() * 22;
+      } else {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const r = 18 + Math.random() * 36;
+        x = r * Math.sin(phi) * Math.cos(theta);
+        y = r * Math.cos(phi) * 0.55 + 1;
+        z = r * Math.sin(phi) * Math.sin(theta);
+      }
 
-      // Every star has color — no gray/white stars
-      const star = pickSpectralType();
-      const hexColor = new THREE.Color(star.color);
-      const brightness = 0.4 + 0.6 * (1 - (star.magnitude.min / star.magnitude.max));
-      col[i * 3] = hexColor.r * brightness;
-      col[i * 3 + 1] = hexColor.g * brightness;
-      col[i * 3 + 2] = hexColor.b * brightness;
+      pos[i * 3] = x;
+      pos[i * 3 + 1] = y;
+      pos[i * 3 + 2] = z;
+
+      const brightness = 0.34 + Math.random() * 0.78;
+      const cool = Math.random();
+      col[i * 3] = brightness * (0.66 + cool * 0.18);
+      col[i * 3 + 1] = brightness * (0.78 + cool * 0.18);
+      col[i * 3 + 2] = brightness * (0.92 + cool * 0.22);
     }
 
     return { positions: pos, colors: col };
-  }, [count, innerRadius, outerRadius]);
+  }, [count, shape]);
 
   const geometry = useMemo(() => {
     const g = new THREE.BufferGeometry();
@@ -72,17 +90,16 @@ function StarLayer({ count, innerRadius, outerRadius, size, baseOpacity, animate
     return g;
   }, [positions, colors]);
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     if (!ref.current) return;
     const t = state.clock.elapsedTime;
-    const mat = ref.current.material as THREE.PointsMaterial;
+    ref.current.rotation.y += delta * speed;
+    ref.current.rotation.z = Math.sin(t * speed * 0.55) * 0.035 - 0.18;
+    ref.current.position.x = Math.sin(t * speed * 0.7) * 0.45;
+    ref.current.position.y = Math.cos(t * speed * 0.5) * 0.16;
 
-    if (animate === 'collective') {
-      const pulse = 0.8 + Math.sin(t * 0.7) * 0.2;
-      mat.opacity = baseOpacity * pulse;
-    } else {
-      mat.opacity = baseOpacity;
-    }
+    const mat = ref.current.material as THREE.PointsMaterial;
+    mat.opacity = baseOpacity * (0.9 + Math.sin(t * 1.25 + speed * 20) * 0.1);
   });
 
   return (
@@ -96,6 +113,7 @@ function StarLayer({ count, innerRadius, outerRadius, size, baseOpacity, animate
         blending={THREE.AdditiveBlending}
         depthWrite={false}
         sizeAttenuation
+        toneMapped={false}
       />
     </points>
   );
@@ -104,9 +122,9 @@ function StarLayer({ count, innerRadius, outerRadius, size, baseOpacity, animate
 export default function BackgroundStars() {
   return (
     <>
-      <StarLayer count={2000} innerRadius={28} outerRadius={40} size={0.10} baseOpacity={0.45} animate="none" />
-      <StarLayer count={1200} innerRadius={16} outerRadius={28} size={0.15} baseOpacity={0.60} animate="collective" />
-      <StarLayer count={400}  innerRadius={8}  outerRadius={16} size={0.30} baseOpacity={0.75} animate="individual" useSpikeTex />
+      <StarLayer count={18000} size={0.045} baseOpacity={0.92} shape="galaxy" speed={0.035} />
+      <StarLayer count={5200} size={0.07} baseOpacity={0.78} shape="field" speed={0.024} />
+      <StarLayer count={1800} size={0.13} baseOpacity={0.74} shape="near" speed={0.045} useSpikeTex />
     </>
   );
 }

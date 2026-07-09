@@ -10,14 +10,26 @@ export function StarLogo({ size = 24, className = '' }: { size?: number; classNa
       className={className}
     >
       <path
-        d="M12 2l2.5 7.5H22l-6 4.5 2.5 7.5L12 17l-6.5 4.5L8 14l-6-4.5h7.5L12 2z"
+        d="M12 2.8c1.1 4.1 2.4 5.4 6.5 6.5-4.1 1.1-5.4 2.4-6.5 6.5-1.1-4.1-2.4-5.4-6.5-6.5 4.1-1.1 5.4-2.4 6.5-6.5Z"
         fill="currentColor"
-        opacity={0.9}
+        opacity={0.92}
       />
       <path
-        d="M12 4l1.8 5.5H20l-4.8 3.5 2 5.5L12 15l-5.2 3.5 2-5.5L4 9.5h6.2L12 4z"
-        fill="white"
-        opacity={0.3}
+        d="M18.4 13.2c.42 1.58.93 2.09 2.5 2.5-1.57.42-2.08.93-2.5 2.5-.42-1.57-.93-2.08-2.5-2.5 1.57-.41 2.08-.92 2.5-2.5Z"
+        fill="currentColor"
+        opacity={0.48}
+      />
+      <path
+        d="M6.1 15.1c.34 1.26.75 1.67 2 2-1.25.34-1.66.75-2 2-.34-1.25-.75-1.66-2-2 1.25-.33 1.66-.74 2-2Z"
+        fill="currentColor"
+        opacity={0.38}
+      />
+      <path
+        d="M4.2 11.5c3.25 2.6 8.35 3.08 13.8 1.18M19.7 10.1C16.6 7.6 11.72 7.02 6.38 8.55"
+        stroke="currentColor"
+        strokeWidth={1.15}
+        strokeLinecap="round"
+        opacity={0.46}
       />
     </svg>
   );
