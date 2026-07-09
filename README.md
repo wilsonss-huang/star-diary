@@ -12,7 +12,7 @@
 
 ## 💻 Windows 桌面版（下载）
 
-**👉 [下载最新版 (v1.0.2)](https://github.com/wilsonss-huang/star-diary/releases/latest)** — 下载 `星空日记 Setup 1.0.2.exe`
+**👉 [下载最新版 (v1.0.3)](https://github.com/wilsonss-huang/star-diary/releases/latest)** — 下载 `星空日记 Setup 1.0.2.exe`
 
 > 双击安装，后续版本自动更新，无需手动下载！
 
