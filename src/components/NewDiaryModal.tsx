@@ -88,7 +88,7 @@ export default function NewDiaryModal({ isOpen, onClose, onSave }: NewDiaryModal
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="absolute inset-0 z-40 flex items-center justify-center px-5 py-8"
+          className="absolute inset-0 z-40 flex items-center justify-center px-4 py-[calc(1rem+env(safe-area-inset-top))]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -102,14 +102,14 @@ export default function NewDiaryModal({ isOpen, onClose, onSave }: NewDiaryModal
           />
 
           <motion.div
-            className="z-10 max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-[34px] border border-white/[0.08]
-                       bg-[#080a1e]/88 p-7 shadow-[0_34px_110px_rgba(0,0,0,0.50)] backdrop-blur-3xl sm:p-9"
+            className="z-10 max-h-[calc(100vh-2rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] w-full max-w-3xl overflow-y-auto rounded-[28px] border border-white/[0.08]
+                       bg-[#080a1e]/88 p-5 shadow-[0_34px_110px_rgba(0,0,0,0.50)] backdrop-blur-3xl sm:rounded-[34px] sm:p-9"
             initial={{ scale: 0.92, opacity: 0, y: 30 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.92, opacity: 0, y: 30 }}
             transition={{ type: 'spring', damping: 22, stiffness: 200 }}
           >
-            <header className="mb-8 flex items-start gap-5">
+            <header className="mb-6 flex items-start gap-4 sm:mb-8 sm:gap-5">
               <span
                 className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/[0.10]"
                 style={{

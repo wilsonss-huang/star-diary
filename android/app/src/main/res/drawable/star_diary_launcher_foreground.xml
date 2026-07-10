@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The launcher mark uses the same paths as StarLogo in src/components/Icons.tsx. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group android:scaleX="0.72" android:scaleY="0.72" android:translateX="3.36" android:translateY="3.36">
+        <path android:fillColor="#EBF6FF" android:pathData="M12,2.8c1.1,4.1 2.4,5.4 6.5,6.5c-4.1,1.1 -5.4,2.4 -6.5,6.5c-1.1,-4.1 -2.4,-5.4 -6.5,-6.5c4.1,-1.1 5.4,-2.4 6.5,-6.5Z" />
+        <path android:fillColor="#7DD3FC" android:fillAlpha="0.52" android:pathData="M18.4,13.2c0.42,1.58 0.93,2.09 2.5,2.5c-1.57,0.42 -2.08,0.93 -2.5,2.5c-0.42,-1.57 -0.93,-2.08 -2.5,-2.5c1.57,-0.41 2.08,-0.92 2.5,-2.5Z" />
+        <path android:fillColor="#A5B4FC" android:fillAlpha="0.42" android:pathData="M6.1,15.1c0.34,1.26 0.75,1.67 2,2c-1.25,0.34 -1.66,0.75 -2,2c-0.34,-1.25 -0.75,-1.66 -2,-2c1.25,-0.33 1.66,-0.74 2,-2Z" />
+        <path android:fillColor="#00000000" android:strokeColor="#A5D8FF" android:strokeAlpha="0.52" android:strokeWidth="1.15" android:strokeLineCap="round" android:pathData="M4.2,11.5c3.25,2.6 8.35,3.08 13.8,1.18M19.7,10.1C16.6,7.6 11.72,7.02 6.38,8.55" />
+    </group>
+</vector>

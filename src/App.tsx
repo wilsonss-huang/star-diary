@@ -158,7 +158,7 @@ export default function App() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.32, delay: 0.06 }}
-          className="relative w-full h-full bg-[#060618] overflow-hidden select-none"
+          className="relative w-full h-full bg-[#060618] overflow-hidden select-none touch-manipulation"
         >
       <StarField
         diaries={diaries}
@@ -204,7 +204,7 @@ export default function App() {
       {/* Bottom controls */}
       {!sidebarOpen && (
         <motion.div
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
+          className="absolute bottom-[calc(2rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-10"
           initial={{ y: 40, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.5 }}
@@ -212,7 +212,7 @@ export default function App() {
           <button
             type="button"
             onClick={() => setShowNewModal(true)}
-            className="glass px-8 py-4 rounded-2xl text-white text-base font-medium
+            className="glass whitespace-nowrap px-8 py-4 rounded-2xl text-white text-base font-medium
                        flex items-center gap-3 cursor-pointer
                        hover:bg-white/10 hover:border-white/18
                        active:scale-[0.98] transition-all duration-200
@@ -228,7 +228,7 @@ export default function App() {
 
       {totalCount > 0 && (
         <motion.div
-          className="absolute bottom-8 right-8 z-10 text-white/15 text-xs"
+          className="absolute bottom-[calc(2rem+env(safe-area-inset-bottom))] right-8 z-10 text-white/15 text-xs max-sm:hidden"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1 }}

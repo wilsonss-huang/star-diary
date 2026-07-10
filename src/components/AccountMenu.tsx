@@ -49,7 +49,7 @@ export default function AccountMenu({ phone, onLogout, onSwitchAccount }: Accoun
   };
 
   return (
-    <div ref={menuRef} className="absolute right-7 top-6 z-50">
+    <div ref={menuRef} className="absolute right-4 top-[calc(1rem+env(safe-area-inset-top))] z-50 sm:right-7 sm:top-6">
       <button
         type="button"
         onClick={() => setIsOpen((value) => !value)}
@@ -75,7 +75,7 @@ export default function AccountMenu({ phone, onLogout, onSwitchAccount }: Accoun
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="absolute right-0 mt-5 w-[380px] overflow-hidden rounded-[30px] border border-white/[0.09]
+            className="absolute right-0 mt-3 w-[calc(100vw-2rem)] max-w-[380px] overflow-hidden rounded-[30px] border border-white/[0.09]
                        bg-[#080b1b]/84 backdrop-blur-3xl"
             style={{
               boxShadow: '0 28px 92px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.08)',

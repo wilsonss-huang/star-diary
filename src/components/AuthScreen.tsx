@@ -204,7 +204,7 @@ export default function AuthScreen() {
       <div className="auth-ribbon auth-ribbon-a" />
       <div className="auth-ribbon auth-ribbon-b" />
 
-      <div className="auth-shell absolute inset-0 z-10 mx-auto grid w-full max-w-[1220px] grid-cols-1 items-center gap-10 px-8 py-10 lg:grid-cols-[1fr_480px] lg:px-14">
+      <div className="auth-shell absolute inset-0 z-10 mx-auto grid w-full max-w-[1220px] grid-cols-1 items-center gap-10 px-5 py-[calc(1.5rem+env(safe-area-inset-top))] lg:grid-cols-[1fr_480px] lg:px-14 lg:py-10">
         <motion.section
           className="auth-hero hidden min-w-0 lg:block"
           initial={{ opacity: 0, x: -28 }}
@@ -233,7 +233,7 @@ export default function AuthScreen() {
           <div className="auth-panel-orbit auth-panel-orbit-a" />
           <div className="auth-panel-orbit auth-panel-orbit-b" />
 
-          <div className="auth-card relative overflow-hidden rounded-[18px] px-8 py-9 sm:px-10 sm:py-11">
+          <div className="auth-card relative overflow-hidden rounded-[18px] px-6 py-7 sm:px-10 sm:py-11">
             <div className="relative z-10">
               <header className="mb-9">
                 <div className="flex items-center gap-4">

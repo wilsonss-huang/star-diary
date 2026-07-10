@@ -89,14 +89,24 @@ export default function SearchBar({ onSearch, onHighlightIds, results, onResultC
 
   return (
     <>
+      {!isVisible && (
+        <button
+          type="button"
+          onClick={() => setIsFocused(true)}
+          className="absolute left-[70px] top-[calc(1rem+env(safe-area-inset-top))] z-20 flex h-11 w-11 items-center justify-center rounded-2xl bg-black/42 text-white/58 shadow-[0_18px_48px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-2xl active:scale-95 md:hidden"
+          aria-label="搜索日记"
+        >
+          <Search size={19} strokeWidth={1.7} />
+        </button>
+      )}
       <div
-        className="absolute left-0 right-0 top-0 z-20 h-12"
+        className="absolute left-0 right-0 top-0 z-20 hidden h-12 md:block"
         onMouseEnter={() => setIsHovering(true)}
         aria-hidden="true"
       />
 
       <motion.div
-        className="absolute left-1/2 top-5 z-20 w-full max-w-3xl -translate-x-1/2 px-6"
+        className="absolute left-1/2 top-[calc(1.25rem+env(safe-area-inset-top))] z-20 w-full max-w-3xl -translate-x-1/2 px-4 sm:px-6"
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
         initial={{ y: -92, opacity: 0 }}
@@ -110,8 +120,8 @@ export default function SearchBar({ onSearch, onHighlightIds, results, onResultC
             boxShadow: '0 22px 80px rgba(0,0,0,0.55), 0 0 34px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.06)',
           }}
         >
-          <div className="flex min-h-[66px] items-center gap-4 px-6 py-3.5">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/[0.035] text-white/48 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+          <div className="flex min-h-[62px] items-center gap-3 px-4 py-3 sm:min-h-[66px] sm:gap-4 sm:px-6 sm:py-3.5">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/[0.035] text-white/48 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] sm:h-11 sm:w-11">
               <Search size={19} strokeWidth={1.7} />
             </span>
             <input
@@ -163,7 +173,7 @@ export default function SearchBar({ onSearch, onHighlightIds, results, onResultC
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden border-t border-white/[0.025]"
               >
-                <div className="flex flex-wrap items-center gap-3 px-6 py-4">
+                <div className="flex flex-wrap items-center gap-2 px-4 py-4 sm:gap-3 sm:px-6">
                   <select
                     value={dateFilter.year || ''}
                     onChange={e => setYear(Number(e.target.value))}
