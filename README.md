@@ -16,7 +16,7 @@
 
 ## 🤖 Android 手机版
 
-Android 工程已接入 Capacitor。请用手机浏览器打开 [Releases](https://github.com/wilsonss-huang/star-diary/releases/latest) 下载 `星空日记-v1.0.5-android.apk`，下载完成后直接点开安装；不建议经微信转发 APK，以免微信把扩展名改成 `.apk.1`。
+Android 工程已接入 Capacitor。请用手机浏览器打开 [Releases](https://github.com/wilsonss-huang/star-diary/releases/latest) 下载 `star-diary-v1.0.5-android.apk`，下载完成后直接点开安装；不建议经微信转发 APK，以免微信把扩展名改成 `.apk.1`。
 
 开发者构建：`npm run android:apk`。生成文件位于 `android/app/build/outputs/apk/debug/app-debug.apk`。
 
