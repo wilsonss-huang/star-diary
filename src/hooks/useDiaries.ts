@@ -65,6 +65,9 @@ export function useDiaries() {
           console.error('  错误信息:', err.message);
           console.error('  错误堆栈:', err.stack);
         }
+        // Token 可能过期，清缓存让用户重新登录。数据在云端完好。
+        try { localStorage.removeItem('star-diary-user'); } catch { /* ignore */ }
+        setDiaries([]);
         // CloudBase 错误对象可能不是 Error 实例，尝试打印完整结构
         try { console.error('  完整错误:', JSON.stringify(err, null, 2)); } catch { /* ignore */ }
       } finally {
