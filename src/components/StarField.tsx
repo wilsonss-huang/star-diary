@@ -93,7 +93,7 @@ function CameraNudge({
   return null;
 }
 
-function StarFieldScene({ diaries, highlightedIds, focusedDiaryId, onStarClick, newStarId }: StarFieldProps) {
+function StarFieldScene({ diaries, highlightedIds, focusedDiaryId, onStarClick, newStarId, isMobile }: StarFieldProps & { isMobile: boolean }) {
   const controlsRef = useRef<any>(null);
   const displayPositions = useMemo(
     () => getDisplayPositions(diaries, highlightedIds),
@@ -122,7 +122,7 @@ function StarFieldScene({ diaries, highlightedIds, focusedDiaryId, onStarClick, 
       <color attach="background" args={['#000000']} />
       <fog attach="fog" args={['#000000', 58, 140]} />
 
-      <BackgroundStars />
+      <BackgroundStars reducedMotion={isMobile} />
 
       <group>
         {diaries.map(diary => (
@@ -165,6 +165,12 @@ function StarFieldScene({ diaries, highlightedIds, focusedDiaryId, onStarClick, 
 }
 
 export default function StarField(props: StarFieldProps) {
+  // Phones render WebGL at very high physical resolutions.  The desktop scene has
+  // almost 40,000 animated background particles, so use the same visual language
+  // with a deliberately lighter scene on touch-sized displays.
+  const isMobile = typeof window !== 'undefined'
+    && (window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 768);
+
   return (
     <motion.div
       className="absolute inset-0 bg-black"
@@ -174,10 +180,10 @@ export default function StarField(props: StarFieldProps) {
     >
       <Canvas
         camera={{ position: [0, 7.5, 31], fov: 52 }}
-        dpr={[1, 2]}
-        gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.18 }}
+        dpr={[1, isMobile ? 1 : 2]}
+        gl={{ antialias: !isMobile, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.18 }}
       >
-        <StarFieldScene {...props} />
+        <StarFieldScene {...props} isMobile={isMobile} />
       </Canvas>
     </motion.div>
   );

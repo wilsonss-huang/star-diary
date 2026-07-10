@@ -14,9 +14,13 @@
 
 > 双击安装，后续版本自动更新，无需手动下载！
 
-## 📱 Android 手机版（即将推出）
+## 🤖 Android 手机版
 
-正在开发中，敬请期待。届时下载 APK 安装即可。
+Android 工程已接入 Capacitor。请用手机浏览器打开 [Releases](https://github.com/wilsonss-huang/star-diary/releases/latest) 下载 `star-diary-v1.0.5-android.apk`，下载完成后直接点开安装；不建议经微信转发 APK，以免微信把扩展名改成 `.apk.1`。
+
+开发者构建：`npm run android:apk`。生成文件位于 `android/app/build/outputs/apk/debug/app-debug.apk`。
+
+> APK 不能像 Windows 程序一样静默自动更新：Android 会要求用户确认安装新版 APK。后续上架应用商店后，可由商店负责自动更新；若只更新网页资源，也可以另行接入安全的热更新服务。
 
 ---
 
@@ -26,7 +30,7 @@
 - 🧠 **登录记忆** — 登录后自动记住，下次打开一键登录
 - ☁️ **云端同步** — 日记自动保存到云端，换设备登录自动恢复
 - ✏️ **编辑日记** — 支持修改已发布的日记
-- 🔄 **自动更新** — Windows 版新版本自动推送，点击重启即可升级
+- 🔄 **更新机制** — Windows 版自动更新；Android APK 更新会由应用提示并经用户确认安装
 - 📝 写日记 → 一颗星星出现在夜空中
 - 😊 6 种情绪颜色（开心/难过/兴奋/平静/心动/沉思）
 - 🔍 搜索 + 日期筛选，匹配的星星高亮连线

@@ -107,7 +107,7 @@ export default function DiaryCard({ diary, onClose, onDelete, onToggleBookmark, 
     <AnimatePresence>
       {diary && (
         <motion.div
-          className="absolute inset-0 z-40 flex items-center justify-end px-7 py-8"
+          className="absolute inset-0 z-40 flex items-end justify-center px-3 py-[calc(0.75rem+env(safe-area-inset-bottom))] sm:items-center sm:justify-end sm:px-7 sm:py-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -121,9 +121,9 @@ export default function DiaryCard({ diary, onClose, onDelete, onToggleBookmark, 
           />
 
           <motion.article
-            className="relative z-10 flex max-h-[86vh] w-full max-w-xl flex-col overflow-hidden rounded-[30px]
+            className="relative z-10 flex max-h-[calc(100vh-1.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] w-full max-w-xl flex-col overflow-hidden rounded-[26px]
                        border border-white/[0.035] bg-black/72 shadow-[0_34px_110px_rgba(0,0,0,0.58),inset_0_1px_0_rgba(255,255,255,0.055)]
-                       backdrop-blur-3xl"
+                       backdrop-blur-3xl sm:max-h-[86vh] sm:rounded-[30px]"
             initial={{ scale: 0.94, opacity: 0, x: 34 }}
             animate={{ scale: 1, opacity: 1, x: 0 }}
             exit={{ scale: 0.94, opacity: 0, x: 34 }}

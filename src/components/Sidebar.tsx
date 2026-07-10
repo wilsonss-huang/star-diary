@@ -89,7 +89,7 @@ export default function Sidebar({
 
   return (
     <>
-      <div className="absolute left-0 top-0 bottom-0 z-30 w-10" onMouseEnter={handleOpen} aria-hidden="true" />
+      <div className="absolute left-0 top-0 bottom-0 z-30 hidden w-10 md:block" onMouseEnter={handleOpen} aria-hidden="true" />
 
       <AnimatePresence>
         {!isOpen && (
@@ -116,7 +116,7 @@ export default function Sidebar({
       <AnimatePresence>
         {isOpen && (
           <motion.aside
-            className="absolute left-0 top-0 bottom-0 z-30 flex w-[360px] max-w-[86vw] flex-col
+            className="absolute left-0 top-0 bottom-0 z-30 flex w-[360px] max-w-[92vw] flex-col
                        border-r border-white/[0.025] bg-black/62 shadow-[24px_0_90px_rgba(0,0,0,0.56)]
                        backdrop-blur-3xl"
             onMouseEnter={handleOpen}
@@ -126,7 +126,7 @@ export default function Sidebar({
             exit={{ x: -380, opacity: 0.9 }}
             transition={{ type: 'spring', damping: 28, stiffness: 240 }}
           >
-            <div className="flex items-center justify-between border-b border-white/[0.025] px-7 py-7">
+            <div className="flex items-center justify-between border-b border-white/[0.025] px-5 py-5 sm:px-7 sm:py-7">
               <div className="flex min-w-0 items-center gap-4">
                 <span
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl"
@@ -156,7 +156,7 @@ export default function Sidebar({
               </button>
             </div>
 
-            <div className="px-7 py-6">
+            <div className="px-5 py-5 sm:px-7 sm:py-6">
               <button
                 type="button"
                 onClick={onNewDiary}
@@ -170,7 +170,7 @@ export default function Sidebar({
               </button>
             </div>
 
-            <div className="flex min-h-0 flex-1 flex-col px-7 py-4">
+            <div className="flex min-h-0 flex-1 flex-col px-5 py-4 sm:px-7">
               <h3 className="mb-4 flex items-center gap-2 text-xs font-medium text-white/38">
                 <StarFilled size={13} />
                 <span>收藏星星</span>
@@ -213,7 +213,7 @@ export default function Sidebar({
               )}
             </div>
 
-            <div className="border-t border-white/[0.025] px-7 py-6">
+            <div className="border-t border-white/[0.025] px-5 py-5 sm:px-7 sm:py-6">
               <div className="mb-4 flex items-center gap-2 text-xs text-white/35">
                 <Sparkles size={14} strokeWidth={1.5} />
                 <span>情绪星谱</span>

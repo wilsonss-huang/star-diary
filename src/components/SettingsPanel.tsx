@@ -12,7 +12,7 @@ export default function SettingsPanel(_props: { refreshDiaries: () => void }) {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="absolute top-[26px] right-[84px] z-20 w-9 h-9 rounded-full
+        className="absolute top-[calc(1.125rem+env(safe-area-inset-top))] right-[72px] z-20 h-9 w-9 rounded-full sm:top-[26px] sm:right-[84px]
                    bg-white/[0.04]
                    flex items-center justify-center cursor-pointer
                    hover:bg-white/[0.10] transition-all active:scale-95"
@@ -32,7 +32,7 @@ export default function SettingsPanel(_props: { refreshDiaries: () => void }) {
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             />
             <motion.div
-              className="glass-strong rounded-3xl px-10 py-10 w-full max-w-sm mx-4 z-10 text-center"
+              className="glass-strong max-h-[calc(100vh-2rem)] w-full max-w-sm overflow-y-auto rounded-3xl px-6 py-7 mx-4 z-10 text-center sm:px-10 sm:py-10"
               initial={{ scale: 0.9, opacity: 0, y: 30 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 30 }}

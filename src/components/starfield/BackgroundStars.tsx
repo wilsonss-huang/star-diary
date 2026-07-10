@@ -119,12 +119,14 @@ function StarLayer({ count, size, baseOpacity, shape, speed, useSpikeTex }: Star
   );
 }
 
-export default function BackgroundStars() {
+export default function BackgroundStars({ reducedMotion = false }: { reducedMotion?: boolean }) {
+  const density = reducedMotion ? 0.22 : 1;
+
   return (
     <>
-      <StarLayer count={28000} size={0.044} baseOpacity={0.96} shape="galaxy" speed={0.038} />
-      <StarLayer count={8600} size={0.065} baseOpacity={0.82} shape="field" speed={0.027} />
-      <StarLayer count={2600} size={0.12} baseOpacity={0.72} shape="near" speed={0.048} useSpikeTex />
+      <StarLayer count={Math.round(28000 * density)} size={0.044} baseOpacity={0.96} shape="galaxy" speed={0.038} />
+      <StarLayer count={Math.round(8600 * density)} size={0.065} baseOpacity={0.82} shape="field" speed={0.027} />
+      <StarLayer count={Math.round(2600 * density)} size={0.12} baseOpacity={0.72} shape="near" speed={0.048} useSpikeTex />
     </>
   );
 }
