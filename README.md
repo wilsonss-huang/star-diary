@@ -16,7 +16,11 @@
 
 ## 🤖 Android 手机版
 
-Android 工程已接入 Capacitor。请用手机浏览器打开 [Releases](https://github.com/wilsonss-huang/star-diary/releases/latest) 下载 `star-diary-v1.0.5-android.apk`，下载完成后直接点开安装；不建议经微信转发 APK，以免微信把扩展名改成 `.apk.1`。
+**👉 [下载 Android 安装包（APK）](https://github.com/wilsonss-huang/star-diary/releases/download/v1.0.5/star-diary-v1.0.5-android.apk)** — `star-diary-v1.0.5-android.apk`
+
+> 请用手机浏览器直接下载，完成后点开安装；不建议通过微信转发 APK，以免扩展名被改成 `.apk.1`。
+
+Android 工程已接入 Capacitor，桌面图标与 Windows 版保持一致。
 
 开发者构建：`npm run android:apk`。生成文件位于 `android/app/build/outputs/apk/debug/app-debug.apk`。
 
