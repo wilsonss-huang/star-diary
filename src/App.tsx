@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import SplashScreen from './components/SplashScreen';
 import StarField from './components/StarField';
 import NewDiaryModal from './components/NewDiaryModal';
@@ -9,6 +9,7 @@ import AuthScreen from './components/AuthScreen';
 import SettingsPanel from './components/SettingsPanel';
 import Sidebar from './components/Sidebar';
 import AccountMenu from './components/AccountMenu';
+import GalaxyEntryTransition from './components/GalaxyEntryTransition';
 import { useDiaries } from './hooks/useDiaries';
 import { useAuth } from './contexts/AuthContext';
 import type { DiaryEntry, Emotion } from './types';
@@ -52,6 +53,7 @@ export default function App() {
   const [selectedDiary, setSelectedDiary] = useState<DiaryEntry | null>(null);
   const [newStarId, setNewStarId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showGalaxyEntry, setShowGalaxyEntry] = useState(true);
   const activeDiary = useMemo(
     () => selectedDiary ? (diaries.find((diary) => diary.id === selectedDiary.id) || selectedDiary) : null,
     [diaries, selectedDiary],
@@ -91,6 +93,16 @@ export default function App() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
+  useEffect(() => {
+    if (!currentUser || authLoading || isCloudLoading) {
+      setShowGalaxyEntry(true);
+      return;
+    }
+
+    const timer = window.setTimeout(() => setShowGalaxyEntry(false), 5400);
+    return () => window.clearTimeout(timer);
+  }, [authLoading, currentUser, isCloudLoading]);
+
   const handleSwitchAccount = useCallback(async () => {
     sessionStorage.setItem('star-diary-skip-welcome', '1');
     await logout();
@@ -101,8 +113,10 @@ export default function App() {
     return <SplashScreen onEnter={splash.dismiss} />;
   }
 
-  // Loading
-  if (authLoading || isCloudLoading) {
+  // Loading — only during initial auth check, not cloud data fetch.
+  // Skipping the loading screen during cloud fetch avoids destroying AuthScreen's
+  // WebGL context and recreating StarField's, which causes a visible stutter.
+  if (authLoading) {
     return (
       <div className="relative w-full h-full bg-[#060618] flex items-center justify-center">
         <div className="text-center">
@@ -120,16 +134,32 @@ export default function App() {
     );
   }
 
-  // Not logged in
-  if (!currentUser) {
-    console.log('🟡 [App] 未登录，显示 AuthScreen');
-    return <AuthScreen />;
-  }
-
-  console.log('🟢 [App] 已登录，显示主界面星空。当前用户:', currentUser.phone);
+  // Auth-gated content: use AnimatePresence to crossfade between
+  // AuthScreen and the main page. This masks the WebGL context switch
+  // (AuthScreen's Canvas is destroyed, StarField's Canvas is created)
+  // which otherwise causes a visible stutter.
+  console.log(!currentUser ? '🟡 [App] 未登录，显示 AuthScreen' : `🟢 [App] 已登录，显示主界面星空。当前用户:${currentUser?.phone}`);
 
   return (
-    <div className="relative w-full h-full bg-[#060618] overflow-hidden select-none">
+    <AnimatePresence mode="wait">
+      {!currentUser ? (
+        <motion.div
+          key="auth"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.22 }}
+        >
+          <AuthScreen />
+        </motion.div>
+      ) : (
+        <motion.div
+          key="main"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.32, delay: 0.06 }}
+          className="relative w-full h-full bg-[#060618] overflow-hidden select-none"
+        >
       <StarField
         diaries={diaries}
         highlightedIds={highlightedIds}
@@ -137,6 +167,10 @@ export default function App() {
         onStarClick={setSelectedDiary}
         newStarId={newStarId}
       />
+
+      {showGalaxyEntry && (
+        <GalaxyEntryTransition hasStars={totalCount > 0} />
+      )}
 
       <SearchBar
         onSearch={searchDiaries}
@@ -266,6 +300,8 @@ export default function App() {
           </div>
         </motion.div>
       )}
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

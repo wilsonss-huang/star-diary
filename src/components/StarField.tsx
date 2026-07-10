@@ -120,7 +120,7 @@ function StarFieldScene({ diaries, highlightedIds, focusedDiaryId, onStarClick, 
   return (
     <>
       <color attach="background" args={['#000000']} />
-      <fog attach="fog" args={['#000000', 42, 92]} />
+      <fog attach="fog" args={['#000000', 58, 140]} />
 
       <BackgroundStars />
 
@@ -150,7 +150,7 @@ function StarFieldScene({ diaries, highlightedIds, focusedDiaryId, onStarClick, 
         enableDamping
         dampingFactor={0.06}
         minDistance={1.5}
-        maxDistance={60}
+        maxDistance={90}
         maxPolarAngle={Math.PI}
         minPolarAngle={0}
         target={initialTarget}
@@ -173,7 +173,7 @@ export default function StarField(props: StarFieldProps) {
       transition={{ duration: 1.2 }}
     >
       <Canvas
-        camera={{ position: [0, 5, 18], fov: 55 }}
+        camera={{ position: [0, 7.5, 31], fov: 52 }}
         dpr={[1, 2]}
         gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.18 }}
       >

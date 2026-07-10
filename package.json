@@ -1,7 +1,7 @@
 {
   "name": "star-diary",
   "private": true,
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "星空日记 - 每篇日记化作一颗星星，挂在夜空中",
   "author": "",
   "type": "module",
@@ -55,6 +55,7 @@
     "electron-updater": "^6.8.9",
     "framer-motion": "^12.42.2",
     "fuse.js": "^7.4.2",
+    "gsap": "^3.15.0",
     "lucide-react": "^1.23.0",
     "react-dom": "^19.2.7",
     "tailwind-merge": "^3.6.0",

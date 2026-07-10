@@ -6,6 +6,9 @@ export default defineConfig({
   // './' for Electron, '/star-diary/' for GitHub Pages
   base: process.env.VITE_BASE || './',
   plugins: [react(), tailwindcss()],
+  optimizeDeps: {
+    exclude: ['lucide-react'],
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: true,

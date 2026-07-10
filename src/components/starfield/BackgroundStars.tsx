@@ -122,9 +122,9 @@ function StarLayer({ count, size, baseOpacity, shape, speed, useSpikeTex }: Star
 export default function BackgroundStars() {
   return (
     <>
-      <StarLayer count={18000} size={0.045} baseOpacity={0.92} shape="galaxy" speed={0.035} />
-      <StarLayer count={5200} size={0.07} baseOpacity={0.78} shape="field" speed={0.024} />
-      <StarLayer count={1800} size={0.13} baseOpacity={0.74} shape="near" speed={0.045} useSpikeTex />
+      <StarLayer count={28000} size={0.044} baseOpacity={0.96} shape="galaxy" speed={0.038} />
+      <StarLayer count={8600} size={0.065} baseOpacity={0.82} shape="field" speed={0.027} />
+      <StarLayer count={2600} size={0.12} baseOpacity={0.72} shape="near" speed={0.048} useSpikeTex />
     </>
   );
 }
