@@ -6,14 +6,14 @@ import NewDiaryModal from './components/NewDiaryModal';
 import DiaryCard from './components/DiaryCard';
 import SearchBar from './components/SearchBar';
 import AuthScreen from './components/AuthScreen';
-import SettingsPanel from './components/SettingsPanel';
-import Sidebar from './components/Sidebar';
-import AccountMenu from './components/AccountMenu';
 import GalaxyEntryTransition from './components/GalaxyEntryTransition';
+import DiaryListView from './components/DiaryListView';
+import ProfileView from './components/ProfileView';
+import WebNavigation, { type AppView } from './components/WebNavigation';
 import { useDiaries } from './hooks/useDiaries';
 import { useAuth } from './contexts/AuthContext';
 import type { DiaryEntry, Emotion } from './types';
-import { SparkleIcon, GalaxyIcon } from './components/Icons';
+import { GalaxyIcon, SparkleIcon } from './components/Icons';
 
 function useSplash() {
   const [shown, setShown] = useState(() => {
@@ -23,7 +23,7 @@ function useSplash() {
     sessionStorage.setItem(key, '1');
     return false;
   });
-  return { shown: shown, dismiss: () => setShown(true) };
+  return { shown, dismiss: () => setShown(true) };
 }
 
 export default function App() {
@@ -39,54 +39,47 @@ export default function App() {
     highlightDiaries,
     highlightedIds,
     totalCount,
-    emotionStats,
     isCloudLoading,
     hasLegacyData,
     migrateLegacy,
     dismissMigration,
-    refreshDiaries,
     toggleBookmark,
-    bookmarkedDiaries,
   } = useDiaries();
 
+  const [activeView, setActiveView] = useState<AppView>('atlas');
   const [showNewModal, setShowNewModal] = useState(false);
   const [selectedDiary, setSelectedDiary] = useState<DiaryEntry | null>(null);
   const [newStarId, setNewStarId] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showGalaxyEntry, setShowGalaxyEntry] = useState(true);
   const activeDiary = useMemo(
     () => selectedDiary ? (diaries.find((diary) => diary.id === selectedDiary.id) || selectedDiary) : null,
     [diaries, selectedDiary],
   );
 
-  const handleSave = useCallback(
-    async (title: string, content: string, emotion: Emotion, photoFileIds?: string[]) => {
-      const entry = await saveDiary(title, content, emotion, photoFileIds);
-      setNewStarId(entry.id);
-      setTimeout(() => setNewStarId(null), 2000);
-    },
-    [saveDiary],
-  );
+  const handleSave = useCallback(async (title: string, content: string, emotion: Emotion, photoFileIds?: string[]) => {
+    const entry = await saveDiary(title, content, emotion, photoFileIds);
+    setNewStarId(entry.id);
+    setActiveView('atlas');
+    setTimeout(() => setNewStarId(null), 2000);
+  }, [saveDiary]);
 
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
-    return diaries.filter((d) => highlightedIds.includes(d.id));
+    return diaries.filter((diary) => highlightedIds.includes(diary.id));
   }, [diaries, highlightedIds, searchQuery]);
 
-  const handleSearchResultClick = useCallback((diary: DiaryEntry) => {
-    setSelectedDiary(diary);
-  }, []);
+  const openDiary = useCallback((diary: DiaryEntry) => setSelectedDiary(diary), []);
+  const handleNavigate = useCallback((view: AppView) => {
+    setActiveView(view);
+    if (view !== 'atlas') searchDiaries('');
+  }, [searchDiaries]);
 
-  // Keyboard shortcuts
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-        e.preventDefault();
-        setSidebarOpen(prev => !prev);
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        document.querySelector<HTMLInputElement>('[data-search-input]')?.focus();
+    const handler = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
+        event.preventDefault();
+        setActiveView('atlas');
+        window.setTimeout(() => document.querySelector<HTMLInputElement>('[data-search-input]')?.focus(), 0);
       }
     };
     window.addEventListener('keydown', handler);
@@ -98,7 +91,6 @@ export default function App() {
       setShowGalaxyEntry(true);
       return;
     }
-
     const timer = window.setTimeout(() => setShowGalaxyEntry(false), 5400);
     return () => window.clearTimeout(timer);
   }, [authLoading, currentUser, isCloudLoading]);
@@ -108,198 +100,84 @@ export default function App() {
     await logout();
   }, [logout]);
 
-  // Splash screen
-  if (!splash.shown) {
-    return <SplashScreen onEnter={splash.dismiss} />;
-  }
+  if (!splash.shown) return <SplashScreen onEnter={splash.dismiss} />;
 
-  // Loading — only during initial auth check, not cloud data fetch.
-  // Skipping the loading screen during cloud fetch avoids destroying AuthScreen's
-  // WebGL context and recreating StarField's, which causes a visible stutter.
   if (authLoading) {
     return (
-      <div className="relative w-full h-full bg-[#060618] flex items-center justify-center">
-        <div className="text-center">
-          <div className="mb-5 text-white/25">
-            <GalaxyIcon size={48} />
-          </div>
-          <div className="text-white/15 text-sm">
-            <span className="inline-block animate-pulse">正在连接星空</span>
-            <span className="inline-block animate-pulse" style={{ animationDelay: '0.3s' }}>.</span>
-            <span className="inline-block animate-pulse" style={{ animationDelay: '0.6s' }}>.</span>
-            <span className="inline-block animate-pulse" style={{ animationDelay: '0.9s' }}>.</span>
-          </div>
-        </div>
+      <div className="relative flex h-full w-full items-center justify-center bg-[#0a0e17]">
+        <div className="text-center"><GalaxyIcon size={48} /><p className="mt-5 text-sm text-white/35">正在连接星空…</p></div>
       </div>
     );
   }
 
-  // Auth-gated content: use AnimatePresence to crossfade between
-  // AuthScreen and the main page. This masks the WebGL context switch
-  // (AuthScreen's Canvas is destroyed, StarField's Canvas is created)
-  // which otherwise causes a visible stutter.
-  console.log(!currentUser ? '🟡 [App] 未登录，显示 AuthScreen' : `🟢 [App] 已登录，显示主界面星空。当前用户:${currentUser?.phone}`);
-
   return (
     <AnimatePresence mode="wait">
       {!currentUser ? (
-        <motion.div
-          key="auth"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.22 }}
-        >
+        <motion.div key="auth" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
           <AuthScreen />
         </motion.div>
       ) : (
-        <motion.div
-          key="main"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.32, delay: 0.06 }}
-          className="relative w-full h-full bg-[#060618] overflow-hidden select-none touch-manipulation"
-        >
-      <StarField
-        diaries={diaries}
-        highlightedIds={highlightedIds}
-        focusedDiaryId={activeDiary?.id || null}
-        onStarClick={setSelectedDiary}
-        newStarId={newStarId}
-      />
-
-      {showGalaxyEntry && (
-        <GalaxyEntryTransition hasStars={totalCount > 0} />
-      )}
-
-      <SearchBar
-        onSearch={searchDiaries}
-        onHighlightIds={highlightDiaries}
-        results={searchResults}
-        onResultClick={handleSearchResultClick}
-        totalCount={totalCount}
-        diaries={diaries}
-        onDiaryClick={setSelectedDiary}
-      />
-
-      <Sidebar
-        isOpen={sidebarOpen}
-        onOpen={() => setSidebarOpen(true)}
-        onClose={() => setSidebarOpen(false)}
-        onToggle={() => setSidebarOpen((value) => !value)}
-        diaries={diaries}
-        bookmarkedDiaries={bookmarkedDiaries}
-        emotionStats={emotionStats}
-        onDiaryClick={setSelectedDiary}
-        onNewDiary={() => setShowNewModal(true)}
-      />
-
-      <SettingsPanel refreshDiaries={refreshDiaries} />
-      <AccountMenu
-        phone={currentUser?.phone || ''}
-        onLogout={logout}
-        onSwitchAccount={handleSwitchAccount}
-      />
-
-      {/* Bottom controls */}
-      {!sidebarOpen && (
-        <motion.div
-          className="absolute bottom-[calc(2rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-10"
-          initial={{ y: 40, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
-        >
-          <button
-            type="button"
-            onClick={() => setShowNewModal(true)}
-            className="glass whitespace-nowrap px-8 py-4 rounded-2xl text-white text-base font-medium
-                       flex items-center gap-3 cursor-pointer
-                       hover:bg-white/10 hover:border-white/18
-                       active:scale-[0.98] transition-all duration-200
-                       shadow-lg shadow-black/20"
-          >
-            <span className="text-white/55">
-              <SparkleIcon size={18} />
-            </span>
-            <span>写日记 · 点亮星星</span>
-          </button>
-        </motion.div>
-      )}
-
-      {totalCount > 0 && (
-        <motion.div
-          className="absolute bottom-[calc(2rem+env(safe-area-inset-bottom))] right-8 z-10 text-white/15 text-xs max-sm:hidden"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
-        >
-          {totalCount} 颗星星在夜空中
-        </motion.div>
-      )}
-
-      {totalCount === 0 && (
-        <motion.div
-          className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-        >
-          <div className="text-center">
-            <div className="mb-5 text-white/10">
-              <GalaxyIcon size={64} />
-            </div>
-            <p className="text-white/15 text-lg">写下你的第一篇日记</p>
-            <p className="text-white/08 text-sm mt-2">每一段回忆都会化作夜空中的一颗星</p>
+        <motion.div key="main" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.32, delay: 0.06 }} className="cosmic-app-shell">
+          <div className={activeView === 'atlas' ? 'celestial-starfield is-visible' : 'celestial-starfield'}>
+            <StarField
+              diaries={diaries}
+              highlightedIds={highlightedIds}
+              focusedDiaryId={activeDiary?.id || null}
+              onStarClick={openDiary}
+              newStarId={newStarId}
+            />
           </div>
-        </motion.div>
-      )}
+          <div className="celestial-page-background" />
 
-      <NewDiaryModal
-        isOpen={showNewModal}
-        onClose={() => setShowNewModal(false)}
-        onSave={handleSave}
-      />
+          <WebNavigation activeView={activeView} onNavigate={handleNavigate} onWrite={() => setShowNewModal(true)} />
 
-      <DiaryCard
-        diary={activeDiary}
-        onClose={() => setSelectedDiary(null)}
-        onDelete={deleteDiary}
-        onToggleBookmark={toggleBookmark}
-        onUpdate={updateDiary}
-      />
+          {activeView === 'atlas' && (
+            <>
+              <section className="celestial-atlas-copy">
+                <p className="celestial-kicker">PRIVATE MEMORY ATLAS</p>
+                <h1>记忆星图</h1>
+                <p>每一颗星，都是一段被珍藏的回忆。</p>
+              </section>
+              <SearchBar
+                onSearch={searchDiaries}
+                onHighlightIds={highlightDiaries}
+                results={searchResults}
+                onResultClick={openDiary}
+                totalCount={totalCount}
+                diaries={diaries}
+                onDiaryClick={openDiary}
+              />
+              {showGalaxyEntry && <GalaxyEntryTransition hasStars={totalCount > 0} />}
+              <div className="celestial-atlas-action">
+                <button type="button" onClick={() => setShowNewModal(true)}><SparkleIcon size={18} /><span>写日记 · 点亮星星</span></button>
+              </div>
+              {totalCount === 0 && (
+                <div className="celestial-atlas-empty"><GalaxyIcon size={48} /><p>写下你的第一篇日记</p><span>每一段回忆都会化作夜空中的一颗星</span></div>
+              )}
+            </>
+          )}
 
-      {hasLegacyData && (
-        <motion.div
-          className="absolute bottom-24 left-1/2 -translate-x-1/2 z-20"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-        >
-          <div className="glass-strong rounded-2xl px-6 py-5 text-sm text-white/80 flex items-center gap-5">
-            <div>
-              <p className="font-medium">发现本地旧数据</p>
-              <p className="text-white/40 text-xs mt-1">是否迁移到云端账号？迁移后所有设备都能看到。</p>
+          {activeView === 'diaries' && <DiaryListView diaries={diaries} onDiaryClick={openDiary} onWrite={() => setShowNewModal(true)} />}
+          {activeView === 'profile' && (
+            <ProfileView
+              phone={currentUser.phone}
+              diaries={diaries}
+              onLogout={logout}
+              onSwitchAccount={handleSwitchAccount}
+              onNavigateToAtlas={() => handleNavigate('atlas')}
+            />
+          )}
+
+          <NewDiaryModal isOpen={showNewModal} onClose={() => setShowNewModal(false)} onSave={handleSave} />
+          <DiaryCard diary={activeDiary} onClose={() => setSelectedDiary(null)} onDelete={deleteDiary} onToggleBookmark={toggleBookmark} onUpdate={updateDiary} />
+
+          {hasLegacyData && (
+            <div className="celestial-migration-note">
+              <div><strong>发现本地旧数据</strong><p>是否迁移到云端账户？</p></div>
+              <button type="button" onClick={dismissMigration}>暂不迁移</button>
+              <button type="button" onClick={migrateLegacy}>迁移到云端</button>
             </div>
-            <div className="flex gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={dismissMigration}
-                className="px-4 py-2 rounded-xl border border-white/[0.08] text-white/35
-                           hover:text-white/55 hover:border-white/18 transition-all cursor-pointer text-xs"
-              >
-                不需要
-              </button>
-              <button
-                type="button"
-                onClick={migrateLegacy}
-                className="px-4 py-2 rounded-xl bg-indigo-500/15 border border-indigo-500/25
-                           text-white hover:bg-indigo-500/25 transition-all cursor-pointer text-xs"
-              >
-                迁移到云端
-              </button>
-            </div>
-          </div>
-        </motion.div>
-      )}
+          )}
         </motion.div>
       )}
     </AnimatePresence>
