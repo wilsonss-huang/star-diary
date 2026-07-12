@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Download, Sparkles, X } from 'lucide-react';
 import SplashScreen from './components/SplashScreen';
 import StarField from './components/StarField';
 import NewDiaryModal from './components/NewDiaryModal';
@@ -14,6 +15,7 @@ import { useDiaries } from './hooks/useDiaries';
 import { useAuth } from './contexts/AuthContext';
 import type { DiaryEntry, Emotion } from './types';
 import { GalaxyIcon, SparkleIcon } from './components/Icons';
+import { checkForUpdate, downloadAndInstall } from './lib/app-update';
 
 function useSplash() {
   const [shown, setShown] = useState(() => {
@@ -52,6 +54,9 @@ export default function App() {
   const [selectedDiary, setSelectedDiary] = useState<DiaryEntry | null>(null);
   const [newStarId, setNewStarId] = useState<string | null>(null);
   const [showGalaxyEntry, setShowGalaxyEntry] = useState(true);
+  const [updateInfo, setUpdateInfo] = useState<{ version: string; downloadUrl: string } | null>(null);
+  const [updateDownloading, setUpdateDownloading] = useState(false);
+  const [updateProgress, setUpdateProgress] = useState(0);
   const activeDiary = useMemo(
     () => selectedDiary ? (diaries.find((diary) => diary.id === selectedDiary.id) || selectedDiary) : null,
     [diaries, selectedDiary],
@@ -97,10 +102,35 @@ export default function App() {
     return () => window.clearTimeout(timer);
   }, [authLoading, currentUser, isCloudLoading]);
 
+  // Check for app updates (Android APK)
+  useEffect(() => {
+    if (!currentUser) return;
+    let active = true;
+    const check = async () => {
+      const result = await checkForUpdate();
+      if (active && result.hasUpdate && result.downloadUrl) {
+        setUpdateInfo({ version: result.latestVersion, downloadUrl: result.downloadUrl });
+      }
+    };
+    void check();
+    return () => { active = false; };
+  }, [currentUser]);
+
   const handleSwitchAccount = useCallback(async () => {
     sessionStorage.setItem('star-diary-skip-welcome', '1');
     await logout();
   }, [logout]);
+
+  const handleUpdateDownload = useCallback(async () => {
+    if (!updateInfo || updateDownloading) return;
+    setUpdateDownloading(true);
+    setUpdateProgress(0);
+    try {
+      await downloadAndInstall(updateInfo.downloadUrl, (progress) => setUpdateProgress(progress));
+    } catch {
+      setUpdateDownloading(false);
+    }
+  }, [updateInfo, updateDownloading]);
 
   if (!splash.shown) return <SplashScreen onEnter={splash.dismiss} />;
 
@@ -132,6 +162,19 @@ export default function App() {
           <div className="celestial-page-background" />
 
           <WebNavigation activeView={activeView} onNavigate={handleNavigate} onWrite={() => setShowNewModal(true)} />
+
+          {updateInfo && (
+            <motion.div className="celestial-update-banner" initial={{ y: -62 }} animate={{ y: 0 }} transition={{ delay: .8, type: 'spring', stiffness: 170, damping: 21 }}>
+              <Sparkles size={14} />
+              <span>发现新版本 v{updateInfo.version}</span>
+              {updateDownloading ? (
+                <span className="celestial-update-progress">正在下载 {Math.round(updateProgress * 100)}%</span>
+              ) : (
+                <button type="button" onClick={handleUpdateDownload}><Download size={14} />立即更新</button>
+              )}
+              <button type="button" className="celestial-update-dismiss" onClick={() => setUpdateInfo(null)} aria-label="稍后提醒"><X size={14} /></button>
+            </motion.div>
+          )}
 
           {activeView === 'atlas' && (
             <>
