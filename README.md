@@ -10,15 +10,15 @@
 
 ## 💻 Windows 桌面版（下载）
 
-**👉 [下载最新版](https://github.com/wilsonss-huang/star-diary/releases/latest)** — 下载 `星空日记 Setup 1.0.x.exe`
+**👉 [下载最新版](https://github.com/wilsonss-huang/star-diary/releases/latest)** — 下载 `星空日记 Setup 1.1.0.exe`
 
 > 双击安装，后续版本自动更新，无需手动下载！
 
 ## 🤖 Android 手机版
 
-**👉 [下载 Android 安装包（APK）](https://github.com/wilsonss-huang/star-diary/releases/download/v1.0.5/star-diary-v1.0.5-android.apk)** — `star-diary-v1.0.5-android.apk`
+**👉 [下载 Android 安装包（APK）](https://github.com/wilsonss-huang/star-diary/releases/download/v1.1.0/star-diary-v1.1.0-android.apk)** — `star-diary-v1.1.0-android.apk`
 
-> 请用手机浏览器直接下载，完成后点开安装；不建议通过微信转发 APK，以免扩展名被改成 `.apk.1`。
+> 📱 **建议横屏使用**，显示效果更佳。请用手机浏览器直接下载，完成后点开安装；不建议通过微信转发 APK，以免扩展名被改成 `.apk.1`。
 
 Android 工程已接入 Capacitor，桌面图标与 Windows 版保持一致。
 
@@ -46,6 +46,14 @@ Android 工程已接入 Capacitor，桌面图标与 Windows 版保持一致。
 ---
 
 ## 📋 更新日志
+
+### v1.1.0
+- 📸 个人头像 — 点击头像上传，云端同步，支持本地降级
+- 📍 写日记自动定位 — GPS + 逆地理编码，记录每篇日记的书写地点
+- 🔍 日记列表筛选 — 按情绪分类 / 珍藏星辰一键切换
+- 🌌 启动页 3D 星空背景 — 流动银河替代静态背景
+- 🤖 Android 横屏锁定 — 横屏使用显示更佳
+- 💄 UI 细节打磨 — 个人中心交互优化
 
 ### v1.0.5
 - 修复登录 token 过期后日记显示为空的问题

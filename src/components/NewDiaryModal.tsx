@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, CalendarDays, ImagePlus, MapPin, Mic, Smile, Sparkles, Tag, X } from 'lucide-react';
-import type { Emotion } from '../types';
+import type { DiaryLocation, Emotion } from '../types';
 import { EMOTION_MAP } from '../types';
 import EmotionSelector from './EmotionSelector';
 import PhotoUploader from './PhotoUploader';
@@ -12,7 +12,7 @@ const DRAFT_KEY = 'star-diary-draft';
 interface NewDiaryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (title: string, content: string, emotion: Emotion, photoFileIds?: string[]) => Promise<void>;
+  onSave: (title: string, content: string, emotion: Emotion, photoFileIds?: string[], location?: DiaryLocation) => Promise<void>;
 }
 
 const placeholders: Record<Emotion, string> = {
@@ -32,6 +32,31 @@ export default function NewDiaryModal({ isOpen, onClose, onSave }: NewDiaryModal
   const [saving, setSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const [openTool, setOpenTool] = useState<'mood' | 'photo' | null>(null);
+  const [location, setLocation] = useState<DiaryLocation | undefined>();
+  const [locationState, setLocationState] = useState<'idle' | 'locating' | 'ready' | 'unavailable'>('idle');
+
+  const locate = useCallback(() => {
+    if (!navigator.geolocation) {
+      setLocationState('unavailable');
+      return;
+    }
+    setLocationState('locating');
+    navigator.geolocation.getCurrentPosition(async ({ coords }) => {
+      const fallback = `北纬 ${coords.latitude.toFixed(3)}°，东经 ${coords.longitude.toFixed(3)}°`;
+      let label = fallback;
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=zh-CN&lat=${coords.latitude}&lon=${coords.longitude}`);
+        if (response.ok) {
+          const result = await response.json() as { address?: Record<string, string>; display_name?: string };
+          const address = result.address || {};
+          label = [address.city || address.town || address.county || address.state, address.suburb || address.village]
+            .filter(Boolean).join(' · ') || result.display_name?.split(',').slice(0, 2).join(' · ') || fallback;
+        }
+      } catch { /* Coordinates remain useful when reverse geocoding is unavailable. */ }
+      setLocation({ label, latitude: coords.latitude, longitude: coords.longitude });
+      setLocationState('ready');
+    }, () => setLocationState('unavailable'), { enableHighAccuracy: true, timeout: 10000, maximumAge: 60_000 });
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -43,6 +68,10 @@ export default function NewDiaryModal({ isOpen, onClose, onSave }: NewDiaryModal
     } catch { /* ignore corrupted draft */ }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (isOpen && locationState === 'idle') locate();
+  }, [isOpen, locate, locationState]);
+
   const saveDraft = useCallback(() => {
     try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ title, content, emotion })); } catch { /* ignore */ }
   }, [title, content, emotion]);
@@ -53,7 +82,7 @@ export default function NewDiaryModal({ isOpen, onClose, onSave }: NewDiaryModal
     return () => window.clearInterval(timer);
   }, [isOpen, saveDraft]);
 
-  const handleClose = () => { saveDraft(); onClose(); };
+  const handleClose = () => { saveDraft(); setLocation(undefined); setLocationState('idle'); onClose(); };
   const handleSave = async () => {
     if (!title.trim() || !content.trim() || saving) return;
     setSaving(true);
@@ -66,8 +95,8 @@ export default function NewDiaryModal({ isOpen, onClose, onSave }: NewDiaryModal
           setUploadProgress({ current: index + 1, total: photoFiles.length });
         }
       }
-      await onSave(title.trim(), content.trim(), emotion, fileIds);
-      setTitle(''); setContent(''); setEmotion('calm'); setPhotoFiles([]); setUploadProgress({ current: 0, total: 0 });
+      await onSave(title.trim(), content.trim(), emotion, fileIds, location);
+      setTitle(''); setContent(''); setEmotion('calm'); setPhotoFiles([]); setLocation(undefined); setLocationState('idle'); setUploadProgress({ current: 0, total: 0 });
       sessionStorage.removeItem(DRAFT_KEY);
       onClose();
     } finally { setSaving(false); }
@@ -90,7 +119,7 @@ export default function NewDiaryModal({ isOpen, onClose, onSave }: NewDiaryModal
           </header>
 
           <main className="stitch-editor-body">
-            <div className="stitch-editor-meta"><span><CalendarDays size={15} />{today}</span><span><MapPin size={15} />星尘观测台</span><span style={{ color: emotionConfig.color }}><Sparkles size={15} />宇宙共鸣：{emotionConfig.label}</span></div>
+            <div className="stitch-editor-meta"><span><CalendarDays size={15} />{today}</span><button type="button" className="stitch-editor-location" onClick={locate} title="重新定位"><MapPin size={15} />{locationState === 'locating' ? '正在定位…' : location?.label || '点击定位'}</button><span style={{ color: emotionConfig.color }}><Sparkles size={15} />宇宙共鸣：{emotionConfig.label}</span></div>
             <div className="stitch-editor-title-wrap">
               <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="此刻的心情标题…" autoFocus />
             </div>

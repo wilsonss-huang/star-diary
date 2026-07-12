@@ -91,6 +91,7 @@ export function useDiaries() {
           photoFileIds: legacy[i].photoFileIds || [],
           isBookmarked: legacy[i].isBookmarked || false,
           date: legacy[i].date || legacy[i].createdAt?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+          location: legacy[i].location,
         });
       } catch (err) {
         console.error(`迁移第 ${i + 1} 条失败:`, err);
@@ -113,14 +114,14 @@ export function useDiaries() {
   }, []);
 
   const saveDiary = useCallback(
-    async (title: string, content: string, emotion: Emotion, photoFileIds: string[] = []) => {
+    async (title: string, content: string, emotion: Emotion, photoFileIds: string[] = [], location?: DiaryEntry['location']) => {
       if (!currentUser) throw new Error('未登录');
 
       const starPosition = randomStarPosition();
       const date = new Date().toISOString().slice(0, 10);
-      const id = await saveDiaryToCloud({ title, content, emotion, starPosition, photoFileIds, isBookmarked: false, date });
+      const id = await saveDiaryToCloud({ title, content, emotion, starPosition, photoFileIds, isBookmarked: false, date, location });
 
-      const entry: DiaryEntry = { id, title, content, emotion, createdAt: new Date().toISOString(), starPosition, photoFileIds, photoUrls: [], isBookmarked: false, date };
+      const entry: DiaryEntry = { id, title, content, emotion, createdAt: new Date().toISOString(), starPosition, photoFileIds, photoUrls: [], isBookmarked: false, date, location };
       setDiaries((prev) => [...prev, entry]);
       return entry;
     },

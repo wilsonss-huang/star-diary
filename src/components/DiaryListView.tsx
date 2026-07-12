@@ -7,6 +7,8 @@ interface DiaryListViewProps {
   diaries: DiaryEntry[];
   onDiaryClick: (diary: DiaryEntry) => void;
   onWrite: () => void;
+  activeFilter: Emotion | 'bookmarked' | null;
+  onFilterChange: (filter: Emotion | 'bookmarked' | null) => void;
 }
 
 const emotionKeys = Object.keys(EMOTION_MAP) as Emotion[];
@@ -15,8 +17,18 @@ function formatDate(date: string) {
   return new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric' }).format(new Date(date));
 }
 
-export default function DiaryListView({ diaries, onDiaryClick, onWrite }: DiaryListViewProps) {
-  const ordered = [...diaries].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+export default function DiaryListView({ diaries, onDiaryClick, onWrite, activeFilter, onFilterChange }: DiaryListViewProps) {
+  const filtered = activeFilter === 'bookmarked'
+    ? diaries.filter((diary) => diary.isBookmarked)
+    : activeFilter
+      ? diaries.filter((diary) => diary.emotion === activeFilter)
+      : diaries;
+  const ordered = [...filtered].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+  const emptyLabel = activeFilter === 'bookmarked'
+    ? '还没有珍藏的星辰'
+    : activeFilter
+      ? `还没有${EMOTION_MAP[activeFilter].label}星象的日记`
+      : '还没有被点亮的星辰';
 
   return (
     <main className="celestial-page celestial-list-page">
@@ -28,9 +40,9 @@ export default function DiaryListView({ diaries, onDiaryClick, onWrite }: DiaryL
 
       <div className="celestial-filter-row" aria-label="按情绪浏览">
         <span>星象分类</span>
-        <button type="button" className="is-active">全部记忆</button>
+        <button type="button" className={!activeFilter ? 'is-active' : ''} onClick={() => onFilterChange(null)}>全部记忆</button>
         {emotionKeys.slice(0, 4).map((emotion) => (
-          <button type="button" key={emotion} style={{ '--chip-color': EMOTION_MAP[emotion].color } as CSSProperties}>
+          <button type="button" key={emotion} className={activeFilter === emotion ? 'is-active' : ''} onClick={() => onFilterChange(emotion)} style={{ '--chip-color': EMOTION_MAP[emotion].color } as CSSProperties}>
             {EMOTION_MAP[emotion].label}
           </button>
         ))}
@@ -39,7 +51,7 @@ export default function DiaryListView({ diaries, onDiaryClick, onWrite }: DiaryL
       {ordered.length === 0 ? (
         <section className="celestial-empty-state">
           <Sparkles size={32} />
-          <h2>还没有被点亮的星辰</h2>
+          <h2>{emptyLabel}</h2>
           <p>写下第一篇日记，让它成为属于你的记忆星图。</p>
           <button type="button" onClick={onWrite}>创建第一篇日记</button>
         </section>

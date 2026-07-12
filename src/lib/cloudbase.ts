@@ -1,5 +1,5 @@
 import cloudbase from '@cloudbase/js-sdk';
-import type { DiaryEntry, Emotion } from '../types';
+import type { DiaryEntry, Emotion, DiaryLocation } from '../types';
 
 const ENV = 'star-diary-d0gt774ca5a0cbd1d';
 
@@ -108,6 +108,7 @@ interface CloudDiary {
   photoFileIds?: string[];
   isBookmarked?: boolean;
   date?: string;
+  location?: DiaryLocation;
 }
 
 function getUserId(): string {
@@ -142,6 +143,7 @@ export async function fetchDiaries(): Promise<DiaryEntry[]> {
     photoUrls: [],
     isBookmarked: d.isBookmarked || false,
     date: d.date || new Date(d.createdAt).toISOString().slice(0, 10),
+    location: d.location,
   }));
 }
 
@@ -160,6 +162,7 @@ export async function saveDiaryToCloud(
     photoFileIds: data.photoFileIds || [],
     isBookmarked: data.isBookmarked || false,
     date: data.date || new Date().toISOString().slice(0, 10),
+    location: data.location,
   });
   console.log('[CloudBase] saveDiaryToCloud 结果:', res);
   return (res as any).id as string;
@@ -190,6 +193,44 @@ export async function uploadPhoto(file: File): Promise<string> {
   const fileId = `cloud://${ENV}.${ENV}/${cloudPath}`;
   console.log('[CloudBase] 上传成功, fileID:', fileId);
   return fileId;
+}
+
+interface CloudUserProfile {
+  _id: string;
+  userId: string;
+  avatarFileId?: string;
+}
+
+/** Returns the current user's avatar file ID, if a profile has been created. */
+export async function getAvatarFileId(): Promise<string | null> {
+  try {
+    const userId = getUserId();
+    const result = await db.collection('profiles').where({ userId }).limit(1).get();
+    const profile = (result.data?.[0] || null) as CloudUserProfile | null;
+    return profile?.avatarFileId || null;
+  } catch (error) {
+    console.warn('[CloudBase] 获取头像资料失败:', error);
+    return null;
+  }
+}
+
+/** Uploads an avatar and records it against the signed-in user profile. */
+export async function saveAvatar(file: File): Promise<string> {
+  const userId = getUserId();
+  const extension = file.name.split('.').pop()?.replace(/[^a-z0-9]/gi, '') || 'jpg';
+  const cloudPath = `avatars/${userId}/${Date.now()}.${extension}`;
+  const { error } = await app.storage.from().upload(cloudPath, file);
+  if (error) throw new Error(error.message || '头像上传失败');
+
+  const avatarFileId = `cloud://${ENV}.${ENV}/${cloudPath}`;
+  const existing = await db.collection('profiles').where({ userId }).limit(1).get();
+  const profile = (existing.data?.[0] || null) as CloudUserProfile | null;
+  if (profile?._id) {
+    await db.collection('profiles').doc(profile._id).update({ avatarFileId, updatedAt: Date.now() });
+  } else {
+    await db.collection('profiles').add({ userId, avatarFileId, updatedAt: Date.now() });
+  }
+  return avatarFileId;
 }
 
 export async function getPhotoUrls(fileIds: string[]): Promise<string[]> {

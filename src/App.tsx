@@ -47,6 +47,7 @@ export default function App() {
   } = useDiaries();
 
   const [activeView, setActiveView] = useState<AppView>('atlas');
+  const [diaryListFilter, setDiaryListFilter] = useState<Emotion | 'bookmarked' | null>(null);
   const [showNewModal, setShowNewModal] = useState(false);
   const [selectedDiary, setSelectedDiary] = useState<DiaryEntry | null>(null);
   const [newStarId, setNewStarId] = useState<string | null>(null);
@@ -56,8 +57,8 @@ export default function App() {
     [diaries, selectedDiary],
   );
 
-  const handleSave = useCallback(async (title: string, content: string, emotion: Emotion, photoFileIds?: string[]) => {
-    const entry = await saveDiary(title, content, emotion, photoFileIds);
+  const handleSave = useCallback(async (title: string, content: string, emotion: Emotion, photoFileIds?: string[], location?: DiaryEntry['location']) => {
+    const entry = await saveDiary(title, content, emotion, photoFileIds, location);
     setNewStarId(entry.id);
     setActiveView('atlas');
     setTimeout(() => setNewStarId(null), 2000);
@@ -71,6 +72,7 @@ export default function App() {
   const openDiary = useCallback((diary: DiaryEntry) => setSelectedDiary(diary), []);
   const handleNavigate = useCallback((view: AppView) => {
     setActiveView(view);
+    setDiaryListFilter(null);
     if (view !== 'atlas') searchDiaries('');
   }, [searchDiaries]);
 
@@ -157,14 +159,16 @@ export default function App() {
             </>
           )}
 
-          {activeView === 'diaries' && <DiaryListView diaries={diaries} onDiaryClick={openDiary} onWrite={() => setShowNewModal(true)} />}
+          {activeView === 'diaries' && <DiaryListView diaries={diaries} activeFilter={diaryListFilter} onFilterChange={setDiaryListFilter} onDiaryClick={openDiary} onWrite={() => setShowNewModal(true)} />}
           {activeView === 'profile' && (
             <ProfileView
+              userId={currentUser.uid}
               phone={currentUser.phone}
               diaries={diaries}
               onLogout={logout}
               onSwitchAccount={handleSwitchAccount}
               onNavigateToAtlas={() => handleNavigate('atlas')}
+              onOpenBookmarked={() => { setDiaryListFilter('bookmarked'); setActiveView('diaries'); searchDiaries(''); }}
             />
           )}
 

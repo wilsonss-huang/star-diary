@@ -1,5 +1,11 @@
 export type Emotion = 'happy' | 'sad' | 'excited' | 'calm' | 'love' | 'thoughtful';
 
+export interface DiaryLocation {
+  label: string;
+  latitude: number;
+  longitude: number;
+}
+
 export interface DiaryEntry {
   id: string;
   title: string;
@@ -11,6 +17,7 @@ export interface DiaryEntry {
   photoUrls: string[];
   isBookmarked: boolean;
   date: string; // YYYY-MM-DD for date-based search
+  location?: DiaryLocation;
 }
 
 export interface EmotionConfig {
