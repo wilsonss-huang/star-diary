@@ -1,11 +1,5 @@
 import AppUpdate from '../plugins/AppUpdate';
 
-interface GitHubRelease {
-  tag_name: string;
-  name: string;
-  assets: Array<{ name: string; browser_download_url: string; size: number }>;
-}
-
 /**
  * Strips the leading 'v' and compares two semver strings.
  * Returns a positive number when a > b, negative when a < b, 0 when equal.
@@ -20,11 +14,7 @@ function compareVersions(a: string, b: string): number {
   return 0;
 }
 
-function cleanTag(tag: string): string {
-  return tag.replace(/^v/, '');
-}
-
-/** Cache check result in sessionStorage so we don't re-prompt on every navigation. */
+/** Cache check result so we don't re-prompt on every navigation. */
 const CACHE_KEY = 'star-diary-update-check';
 const CACHE_TTL = 1000 * 60 * 60 * 3; // 3 hours
 
@@ -34,6 +24,10 @@ interface CheckResult {
   currentVersion: string;
   downloadUrl?: string;
 }
+
+/** CloudBase static hosting — domestic CDN, no VPN needed. */
+const BASE_URL = 'https://star-diary-d0gt774ca5a0cbd1d-1451273426.tcloudbaseapp.com';
+const VERSION_URL = `${BASE_URL}/version.json`;
 
 /**
  * IMPORTANT: Bump this constant on every release so the in-app update check
@@ -49,7 +43,7 @@ async function getCurrentVersion(): Promise<string> {
 export async function checkForUpdate(): Promise<CheckResult> {
   const currentVersion = await getCurrentVersion();
 
-  // Use session cache to avoid hitting API rate limits too often
+  // Use session cache to avoid hammering CDN
   try {
     const cached = sessionStorage.getItem(CACHE_KEY);
     if (cached) {
@@ -61,27 +55,20 @@ export async function checkForUpdate(): Promise<CheckResult> {
   } catch { /* ignore */ }
 
   try {
-    const response = await fetch(
-      'https://api.github.com/repos/wilsonss-huang/star-diary/releases/latest',
-      { headers: { Accept: 'application/vnd.github.v3+json' } },
-    );
+    const response = await fetch(VERSION_URL, { cache: 'no-cache' });
     if (!response.ok) {
       return { hasUpdate: false, latestVersion: currentVersion, currentVersion };
     }
 
-    const release: GitHubRelease = await response.json();
-    const latestVersion = cleanTag(release.tag_name);
+    const info = (await response.json()) as { version: string; android?: string };
+    const latestVersion = info.version.replace(/^v/, '');
     const hasUpdate = compareVersions(latestVersion, currentVersion) > 0;
-
-    const apkAsset = release.assets.find(
-      (asset) => asset.name.endsWith('.apk') && asset.name.includes('android'),
-    );
 
     const result: CheckResult = {
       hasUpdate,
       latestVersion,
       currentVersion,
-      downloadUrl: apkAsset?.browser_download_url,
+      downloadUrl: info.android,
     };
 
     try {
@@ -96,16 +83,14 @@ export async function checkForUpdate(): Promise<CheckResult> {
 
 /**
  * Call on Android: downloads the APK via the native plugin and triggers install.
- * The user must confirm the system install dialog.
+ * Falls back to opening the download URL in the browser.
  */
 export async function downloadAndInstall(
   url: string,
   onProgress?: (progress: number) => void,
 ): Promise<void> {
   try {
-    // Only available on Android
     if (!AppUpdate.downloadAndInstall) {
-      // Web/desktop fallback: open download page in browser
       window.open(url, '_blank');
       return;
     }
@@ -118,7 +103,7 @@ export async function downloadAndInstall(
 
     await AppUpdate.downloadAndInstall({ url });
   } catch (error) {
-    console.warn('[AppUpdate] 原生安装失败，降级到浏览器下载:', error);
+    console.warn('[AppUpdate] 安装失败，跳转浏览器下载:', error);
     window.open(url, '_blank');
   }
 }
